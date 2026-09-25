@@ -10,6 +10,8 @@ import { Badge, Button, EmptyState, SectionTitle } from "@/components/ui";
 export default function ContactsPage() {
   const { accessToken, organizationId } = useAuth();
   const [query, setQuery] = useState("");
+  const [page, setPage] = useState(1);
+  const pageSize = 25;
   const [selected, setSelected] = useState<Contact | null>(null);
   const [health, setHealth] = useState<RelationshipHealth | null>(null);
   const [timeline, setTimeline] = useState<TimelineResponse | null>(null);
@@ -20,11 +22,11 @@ export default function ContactsPage() {
   const prefix = organizationId ? `/organizations/${organizationId}` : "";
 
   const contacts = useQuery({
-    queryKey: ["contacts", organizationId, query],
+    queryKey: ["contacts", organizationId, query, page],
     enabled,
     queryFn: () =>
       apiFetch<ContactList>(
-        `${prefix}/contacts?page_size=100${query ? `&q=${encodeURIComponent(query)}` : ""}`,
+        `${prefix}/contacts?page=${page}&page_size=${pageSize}${query ? `&q=${encodeURIComponent(query)}` : ""}`,
         {},
         accessToken,
       ),
@@ -74,7 +76,7 @@ export default function ContactsPage() {
           aria-label="Search contacts"
           placeholder="Search name, email, phone…"
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
+          onChange={(e) => { setQuery(e.target.value); setPage(1); }}
         />
         <span className="toolbar-meta">{contacts.data?.total ?? 0} contacts</span>
       </div>
@@ -104,6 +106,15 @@ export default function ContactsPage() {
           <EmptyState title="No contacts yet" description="Create your first contact or import a validated CSV from the Imports area." />
         )}
       </div>
+      {contacts.data && contacts.data.total > pageSize ? (
+        <div className="pagination" aria-label="Contacts pagination">
+          <span>Page {contacts.data.page} of {Math.ceil(contacts.data.total / contacts.data.page_size)}</span>
+          <div>
+            <Button variant="secondary" disabled={page <= 1 || contacts.isFetching} onClick={() => setPage((value) => Math.max(1, value - 1))}>Previous</Button>
+            <Button variant="secondary" disabled={page >= Math.ceil(contacts.data.total / contacts.data.page_size) || contacts.isFetching} onClick={() => setPage((value) => value + 1)}>Next</Button>
+          </div>
+        </div>
+      ) : null}
 
       {selected ? (
         <div className="drawer-backdrop" onClick={() => setSelected(null)}>
