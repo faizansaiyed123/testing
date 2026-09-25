@@ -593,3 +593,51 @@ def test_standout_endpoints_all_exercised(client, db_session):
         headers=h,
     )
     assert missing_run.status_code == 404
+
+
+def test_api_bounds_and_privileged_route_guards(client, db_session):
+    organization, owner = identity(db_session)
+    member_org, member = identity(db_session, role=MembershipRole.MEMBER, suffix=uuid4().hex)
+    owner_headers = headers(owner)
+    member_headers = headers(member)
+
+    org = f"/api/v1/organizations/{organization.id}"
+    assert client.get(f"{org}/contacts?page_size=0", headers=owner_headers).status_code == 422
+    assert client.get(f"{org}/attention?limit=101", headers=owner_headers).status_code == 422
+    assert client.get(f"{org}/work-planner?limit=51", headers=owner_headers).status_code == 422
+    assert client.get(f"{org}/pipeline/stuck?limit=51", headers=owner_headers).status_code == 422
+    assert client.get(f"{org}/automation/runs?limit=101", headers=owner_headers).status_code == 422
+
+    assert client.get(
+        f"/api/v1/organizations/{member_org.id}/business-rules",
+        headers=member_headers,
+    ).status_code == 403
+    assert client.patch(
+        f"/api/v1/organizations/{member_org.id}/business-rules/contact_inactivity_days",
+        json={"value": 7},
+        headers=member_headers,
+    ).status_code == 403
+
+    assert client.post(
+        f"/api/v1/organizations/{member_org.id}/automation/rules",
+        json={
+            "name": "Blocked",
+            "trigger": "opportunity.won",
+            "action_type": "create_task",
+            "action_config": {"title": "Blocked", "priority": "normal", "due_days": 1},
+        },
+        headers=member_headers,
+    ).status_code == 403
+
+    assert client.post(
+        f"/api/v1/organizations/{member_org.id}/imports/contacts/preview",
+        files={"file": ("contacts.csv", b"first_name,last_name\nA,B\n", "text/csv")},
+        headers=member_headers,
+    ).status_code == 403
+
+    bad_csv = client.post(
+        f"{org}/imports/contacts/preview",
+        files={"file": ("bad.csv", b"wrong,header\nA,B\n", "text/csv")},
+        headers=owner_headers,
+    )
+    assert bad_csv.status_code == 400
