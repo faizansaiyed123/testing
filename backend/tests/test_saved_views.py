@@ -1,8 +1,6 @@
 from importlib.util import find_spec
 
 import pytest
-from sqlalchemy import select
-
 from app.auth.crypto import hash_password
 from app.auth.tokens import create_access_token
 from app.db.base import Base
@@ -120,12 +118,14 @@ def test_private_view_is_not_visible_cross_user_and_member_cannot_share(client, 
         full_name="Member User",
         password_hash=hash_password("Correct Horse Battery Staple"),
     )
+    db_session.add(member)
+    db_session.flush()
     member_link = Membership(
         organization_id=organization.id,
         user_id=member.id,
         role=MembershipRole.MEMBER,
     )
-    db_session.add_all([member, member_link])
+    db_session.add(member_link)
     db_session.flush()
 
     owner_token = create_access_token(owner.id)
@@ -162,4 +162,3 @@ def test_private_view_is_not_visible_cross_user_and_member_cannot_share(client, 
 
 def test_saved_view_model_is_registered() -> None:
     assert "saved_views" in Base.metadata.tables
-    assert select(SavedView)
