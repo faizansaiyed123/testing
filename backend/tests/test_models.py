@@ -1,5 +1,5 @@
 from app.db.base import Base
-from app.models import Membership, MembershipRole, Organization, User
+from app.models import AuthSession, Membership, MembershipRole, Organization, User
 
 
 def test_identity_tables_are_registered() -> None:
@@ -7,6 +7,7 @@ def test_identity_tables_are_registered() -> None:
         "organizations",
         "users",
         "organization_memberships",
+        "auth_sessions",
     }
 
 
@@ -18,6 +19,7 @@ def test_identity_constraints_exist() -> None:
     users = Base.metadata.tables[User.__tablename__]
     organizations = Base.metadata.tables[Organization.__tablename__]
     memberships = Base.metadata.tables[Membership.__tablename__]
+    sessions = Base.metadata.tables[AuthSession.__tablename__]
 
     assert any(index.unique for index in users.indexes)
     assert any(constraint.name == "uq_membership_org_user" for constraint in memberships.constraints)
@@ -27,3 +29,4 @@ def test_identity_constraints_exist() -> None:
         if constraint.__class__.__name__ == "UniqueConstraint"
     )
     assert any(index.name == "ix_memberships_org_role" for index in memberships.indexes)
+    assert any(index.name == "ix_auth_sessions_user_active" for index in sessions.indexes)
