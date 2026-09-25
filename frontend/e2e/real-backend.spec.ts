@@ -29,7 +29,7 @@ test("real browser flow reaches the PostgreSQL-backed CRM", async ({ page }) => 
   await expect(attentionCard.locator("strong")).toHaveText("0");
 
   await page.getByRole("link", { name: "Contacts" }).click();
-  await expect(page.getByRole("heading", { name: "Contacts" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Contacts", exact: true })).toBeVisible();
 
   await page.getByRole("button", { name: "Add contact" }).click();
   await page.getByLabel("First name").fill("Ada");
