@@ -76,7 +76,6 @@ def merge(
         entity_type=entity_type,
         survivor_id=operation.survivor_id,
         merged_id=operation.merged_id,
-        transferred_relations={},
         completed_at=operation.completed_at or datetime.now(UTC),
     )
 
@@ -143,8 +142,8 @@ def stuck_opportunities(
 ) -> StuckOpportunityResponse:
     items = get_stuck_opportunities(db, organization_id=organization_id, limit=limit)
     configured = next(
-        item.value for item in list_rule_values(db, organization_id=organization_id)
-        if item.key == "opportunity_stage_stuck_days"
+        item["value"] for item in list_rule_values(db, organization_id=organization_id)
+        if item["key"] == "opportunity_stage_stuck_days"
     )
     return StuckOpportunityResponse(
         generated_at=datetime.now(UTC),
