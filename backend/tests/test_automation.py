@@ -6,8 +6,8 @@ from sqlalchemy import func, select
 from app.auth.crypto import hash_password
 from app.auth.tokens import create_access_token
 from app.models import (
-    AutomationRun,
     AutomationRule,
+    AutomationRun,
     Membership,
     MembershipRole,
     Opportunity,
