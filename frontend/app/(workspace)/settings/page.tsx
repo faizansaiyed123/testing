@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/app/providers";
 import { apiFetch } from "@/lib/api";
@@ -71,10 +71,13 @@ export default function SettingsPage() {
 
 function RuleRow({ rule, busy, onSave }: { rule: BusinessRule; busy: boolean; onSave: (value: number) => void }) {
   const [value, setValue] = useState(String(rule.value));
+  useEffect(() => {
+    setValue(String(rule.value));
+  }, [rule.value]);
   return (
     <div className="rule-row">
       <div><strong>{rule.key.replaceAll("_", " ")}</strong><p>{rule.description}. Default: {rule.default}.</p></div>
-      <div className="rule-control"><input type="number" min={0} max={365} value={value} onChange={(e) => setValue(e.target.value)} /><Button variant="secondary" disabled={busy || Number(value) === rule.value} onClick={() => onSave(Number(value))}>Save</Button></div>
+      <div className="rule-control"><input type="number" min={0} max={365} value={value} onChange={(e) => setValue(e.target.value)} /><Button variant="secondary" disabled={busy || !Number.isFinite(Number(value)) || Number(value) < 0 || Number(value) > 365 || Number(value) === rule.value} onClick={() => onSave(Number(value))}>Save</Button></div>
     </div>
   );
 }
