@@ -9,7 +9,6 @@ from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from app.auth.crypto import hash_password
 from app.models import Contact, ImportJob, ImportRow
 from app.services.audit import record_audit
 
