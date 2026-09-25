@@ -33,6 +33,8 @@ class MembershipResponse(BaseModel):
 
 
 class UserResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: UUID
     email: EmailStr
     full_name: str
