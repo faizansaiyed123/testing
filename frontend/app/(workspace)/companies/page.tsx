@@ -4,6 +4,7 @@ import { FormEvent, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/app/providers";
 import { apiFetch } from "@/lib/api";
+import { useDebouncedValue } from "@/lib/use-debounced-value";
 import type { Company, CompanyList } from "@/lib/types";
 import { Button, EmptyState, SectionTitle } from "@/components/ui";
 
@@ -13,6 +14,7 @@ export default function CompaniesPage() {
   const prefix = organizationId ? `/organizations/${organizationId}` : "";
   const queryClient = useQueryClient();
   const [query, setQuery] = useState("");
+  const debouncedQuery = useDebouncedValue(query);
   const [page, setPage] = useState(1);
   const pageSize = 25;
   const [creating, setCreating] = useState(false);
@@ -20,11 +22,11 @@ export default function CompaniesPage() {
   const [selected, setSelected] = useState<Company | null>(null);
 
   const companies = useQuery({
-    queryKey: ["companies", organizationId, query, page],
+    queryKey: ["companies", organizationId, debouncedQuery, page],
     enabled,
     queryFn: () =>
       apiFetch<CompanyList>(
-        `${prefix}/companies?page=${page}&page_size=${pageSize}${query ? `&q=${encodeURIComponent(query)}` : ""}`,
+        `${prefix}/companies?page=${page}&page_size=${pageSize}${debouncedQuery ? `&q=${encodeURIComponent(debouncedQuery)}` : ""}`,
         {},
         accessToken,
       ),
