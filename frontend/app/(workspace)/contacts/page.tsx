@@ -32,6 +32,26 @@ export default function ContactsPage() {
       ),
   });
 
+  const update = useMutation({
+    mutationFn: ({ id, input }: { id: string; input: Record<string, unknown> }) =>
+      apiFetch<Contact>(`${prefix}/contacts/${id}`, { method: "PATCH", body: input }, accessToken),
+    onSuccess: (contact) => {
+      void queryClient.invalidateQueries({ queryKey: ["contacts", organizationId] });
+      setSelected(contact);
+      setError("");
+    },
+    onError: (mutationError) => setError(mutationError instanceof Error ? mutationError.message : "Could not update contact"),
+  });
+
+  const archive = useMutation({
+    mutationFn: (id: string) => apiFetch<void>(`${prefix}/contacts/${id}`, { method: "DELETE" }, accessToken),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["contacts", organizationId] });
+      setSelected(null);
+    },
+    onError: (mutationError) => setError(mutationError instanceof Error ? mutationError.message : "Could not archive contact"),
+  });
+
   const create = useMutation({
     mutationFn: (input: Record<string, unknown>) =>
       apiFetch<Contact>(`${prefix}/contacts`, { method: "POST", body: input }, accessToken),
@@ -117,62 +137,148 @@ export default function ContactsPage() {
       ) : null}
 
       {selected ? (
-        <div className="drawer-backdrop" onClick={() => setSelected(null)}>
-          <aside className="drawer" role="dialog" aria-modal="true" aria-labelledby="relationship-drawer-title" onClick={(e) => e.stopPropagation()}>
-            <div className="drawer-head">
-              <div><span className="eyebrow">Relationship</span><h2 id="relationship-drawer-title">{selected.first_name} {selected.last_name}</h2><p>{selected.email ?? "No email on file"}</p></div>
-              <button className="icon-button" onClick={() => setSelected(null)} aria-label="Close">×</button>
-            </div>
-            <div className="health-card">
-              <div className="health-score">{health?.score ?? "—"}</div>
-              <div><strong>{health?.band?.replace("_", " ") ?? "Loading signal"}</strong><p>Deterministic relationship-health heuristic.</p></div>
-            </div>
-            {health ? (
-              <>
-                <div className="mini-stats">
-                  <div><span>30d activity</span><strong>{health.activity_count_30d}</strong></div>
-                  <div><span>Open opps</span><strong>{health.open_opportunity_count}</strong></div>
-                  <div><span>Overdue tasks</span><strong>{health.overdue_task_count}</strong></div>
-                </div>
-                <div className="evidence-list">
-                  <h3>Evidence</h3>
-                  {health.evidence.map((item) => (
-                    <div key={item.code}><span>{item.impact > 0 ? "+" : ""}{item.impact}</span><div><strong>{item.code}</strong><p>{item.description}</p></div></div>
-                  ))}
-                </div>
-              </>
-            ) : <div className="panel-empty">Calculating relationship signal…</div>}
-            <div className="timeline-panel">
-              <h3>Recent context</h3>
-              {timeline?.items.length ? (
-                <div className="timeline-list">
-                  {timeline.items.map((item) => (
-                    <div key={`${item.kind}-${item.id}`} className="timeline-item">
-                      <span className={`timeline-dot timeline-${item.kind}`} />
-                      <div>
-                        <div className="timeline-meta">
-                          <Badge tone={item.kind === "audit" ? "neutral" : item.kind === "task" ? "warning" : "info"}>{item.kind}</Badge>
-                          <time dateTime={item.timestamp}>{new Date(item.timestamp).toLocaleString()}</time>
-                        </div>
-                        <strong>{item.title}</strong>
-                        {item.summary ? <p>{item.summary}</p> : null}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : timeline ? (
-                <div className="panel-empty compact-empty">No recent context yet.</div>
-              ) : (
-                <div className="panel-empty compact-empty">Loading recent context…</div>
-              )}
-            </div>
-          </aside>
-        </div>
+        <ContactDrawer
+          contact={selected}
+          health={health}
+          timeline={timeline}
+          onClose={() => setSelected(null)}
+          onSave={(input) => update.mutate({ id: selected.id, input })}
+          onArchive={() => archive.mutate(selected.id)}
+          busy={update.isPending || archive.isPending}
+          error={error}
+        />
       ) : null}
 
       {showCreate ? (
         <CreateContact onClose={() => setShowCreate(false)} onCreate={(input) => create.mutate(input)} busy={create.isPending} error={error} />
       ) : null}
+    </div>
+  );
+}
+
+function ContactDrawer({
+  contact,
+  health,
+  timeline,
+  onClose,
+  onSave,
+  onArchive,
+  busy,
+  error,
+}: {
+  contact: Contact;
+  health: RelationshipHealth | null;
+  timeline: TimelineResponse | null;
+  onClose: () => void;
+  onSave: (input: Record<string, unknown>) => void;
+  onArchive: () => void;
+  busy: boolean;
+  error: string;
+}) {
+  const [firstName, setFirstName] = useState(contact.first_name);
+  const [lastName, setLastName] = useState(contact.last_name);
+  const [email, setEmail] = useState(contact.email ?? "");
+  const [phone, setPhone] = useState(contact.phone ?? "");
+  const [jobTitle, setJobTitle] = useState(contact.job_title ?? "");
+  const [lifecycle, setLifecycle] = useState(contact.lifecycle);
+
+  useEffect(() => {
+    setFirstName(contact.first_name);
+    setLastName(contact.last_name);
+    setEmail(contact.email ?? "");
+    setPhone(contact.phone ?? "");
+    setJobTitle(contact.job_title ?? "");
+    setLifecycle(contact.lifecycle);
+  }, [contact]);
+
+  useEffect(() => {
+    const handleKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  }, [onClose]);
+
+  function submit(event: FormEvent) {
+    event.preventDefault();
+    onSave({
+      first_name: firstName,
+      last_name: lastName,
+      email: email || null,
+      phone: phone || null,
+      job_title: jobTitle || null,
+      lifecycle,
+    });
+  }
+
+  return (
+    <div className="drawer-backdrop" onClick={onClose}>
+      <aside className="drawer" role="dialog" aria-modal="true" aria-labelledby="relationship-drawer-title" onClick={(event) => event.stopPropagation()}>
+        <div className="drawer-head">
+          <div><span className="eyebrow">Customer 360</span><h2 id="relationship-drawer-title">{contact.first_name} {contact.last_name}</h2><p>{contact.email ?? "No email on file"}</p></div>
+          <button className="icon-button" onClick={onClose} aria-label="Close">×</button>
+        </div>
+
+        <section className="health-card" aria-label="Relationship health">
+          <div className="health-score">{health?.score ?? "—"}</div>
+          <div><strong>{health?.band?.replace("_", " ") ?? "Loading signal"}</strong><p>Deterministic relationship-health heuristic.</p></div>
+        </section>
+
+        {health ? (
+          <>
+            <div className="mini-stats">
+              <div><span>30d activity</span><strong>{health.activity_count_30d}</strong></div>
+              <div><span>Open opps</span><strong>{health.open_opportunity_count}</strong></div>
+              <div><span>Overdue tasks</span><strong>{health.overdue_task_count}</strong></div>
+            </div>
+            <div className="evidence-list">
+              <h3>Evidence</h3>
+              {health.evidence.map((item) => (
+                <div key={item.code}><span>{item.impact > 0 ? "+" : ""}{item.impact}</span><div><strong>{item.code}</strong><p>{item.description}</p></div></div>
+              ))}
+            </div>
+          </>
+        ) : <div className="panel-empty">Calculating relationship signal…</div>}
+
+        <div className="timeline-panel">
+          <h3>Recent context</h3>
+          {timeline?.items.length ? (
+            <div className="timeline-list">
+              {timeline.items.map((item) => (
+                <div key={`${item.kind}-${item.id}`} className="timeline-item">
+                  <span className={`timeline-dot timeline-${item.kind}`} />
+                  <div>
+                    <div className="timeline-meta">
+                      <Badge tone={item.kind === "audit" ? "neutral" : item.kind === "task" ? "warning" : "info"}>{item.kind}</Badge>
+                      <time dateTime={item.timestamp}>{new Date(item.timestamp).toLocaleString()}</time>
+                    </div>
+                    <strong>{item.title}</strong>
+                    {item.summary ? <p>{item.summary}</p> : null}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : timeline ? (
+            <div className="panel-empty compact-empty">No recent context yet.</div>
+          ) : (
+            <div className="panel-empty compact-empty">Loading recent context…</div>
+          )}
+        </div>
+
+        <div className="drawer-form-divider" />
+        <form className="stack-form" onSubmit={submit}>
+          <div><span className="eyebrow">Edit record</span><h3 className="drawer-section-title">Contact details</h3></div>
+          <label>First name<input value={firstName} onChange={(event) => setFirstName(event.target.value)} required /></label>
+          <label>Last name<input value={lastName} onChange={(event) => setLastName(event.target.value)} required /></label>
+          <label>Email<input type="email" value={email} onChange={(event) => setEmail(event.target.value)} /></label>
+          <label>Phone<input value={phone} onChange={(event) => setPhone(event.target.value)} /></label>
+          <label>Job title<input value={jobTitle} onChange={(event) => setJobTitle(event.target.value)} /></label>
+          <label>Lifecycle<select value={lifecycle} onChange={(event) => setLifecycle(event.target.value as Contact["lifecycle"])}><option value="lead">lead</option><option value="prospect">prospect</option><option value="customer">customer</option><option value="churned">churned</option></select></label>
+          {error ? <div className="form-error" role="alert">{error}</div> : null}
+          <Button type="submit" disabled={busy}>{busy ? "Saving…" : "Save changes"}</Button>
+          <Button variant="danger" disabled={busy} onClick={() => { if (window.confirm("Archive this contact?")) onArchive(); }}>Archive contact</Button>
+        </form>
+      </aside>
     </div>
   );
 }
