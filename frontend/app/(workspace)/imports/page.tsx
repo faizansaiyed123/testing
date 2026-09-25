@@ -74,7 +74,7 @@ export default function ImportsPage() {
           ) : <span>Owner/admin access required.</span>}
         </div>
       </div>
-      {message ? <div className="callout">{message}</div> : null}
+      {message ? <div className="callout" role="status" aria-live="polite">{message}</div> : null}
       {preview ? (
         <div className="content-grid two-up">
           <section className="panel">
