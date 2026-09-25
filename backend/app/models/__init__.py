@@ -9,8 +9,8 @@ from app.models.imports import ImportJob, ImportRow
 from app.models.opportunity import Opportunity
 from app.models.organization import Organization
 from app.models.pipeline import PipelineStage
-from app.models.rate_limit import AuthRateLimit
 from app.models.merge_operation import MergeOperation
+from app.models.rate_limit import AuthRateLimit
 from app.models.saved_view import SavedView
 from app.models.task import Task
 from app.models.user import Membership, MembershipRole, User
