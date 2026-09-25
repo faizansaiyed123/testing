@@ -5,6 +5,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/app/providers";
 import { apiFetch } from "@/lib/api";
 import { useDebouncedValue } from "@/lib/use-debounced-value";
+import { useDrawerBehavior } from "@/lib/use-drawer-behavior";
 import type { Company, CompanyList } from "@/lib/types";
 import { Button, EmptyState, SectionTitle } from "@/components/ui";
 
@@ -183,6 +184,7 @@ function CompanyDrawer({
   error: string;
 }) {
   const [name, setName] = useState(company.name);
+  useDrawerBehavior(true, onClose);
   const [website, setWebsite] = useState(company.website ?? "");
   const [phone, setPhone] = useState(company.phone ?? "");
 
