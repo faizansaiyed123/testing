@@ -61,15 +61,15 @@ def test_refresh_rotates_session_and_requires_csrf(client) -> None:
     assert signup.status_code == 201
 
     old_refresh = client.cookies.get("fieldline_refresh")
-    csrf_token = client.cookies.get("fieldline_csrf")
-    assert old_refresh and csrf_token
+    old_csrf = client.cookies.get("fieldline_csrf")
+    assert old_refresh and old_csrf
 
     missing_csrf = client.post("/api/v1/auth/refresh")
     assert missing_csrf.status_code == 403
 
     refreshed = client.post(
         "/api/v1/auth/refresh",
-        headers={"X-CSRF-Token": csrf_token},
+        headers={"X-CSRF-Token": old_csrf},
     )
     assert refreshed.status_code == 200
     new_refresh = client.cookies.get("fieldline_refresh")
@@ -79,6 +79,6 @@ def test_refresh_rotates_session_and_requires_csrf(client) -> None:
     client.cookies.set("fieldline_refresh", old_refresh)
     reused = client.post(
         "/api/v1/auth/refresh",
-        headers={"X-CSRF-Token": client.cookies.get("fieldline_csrf") or ""},
+        headers={"X-CSRF-Token": old_csrf},
     )
     assert reused.status_code == 401
