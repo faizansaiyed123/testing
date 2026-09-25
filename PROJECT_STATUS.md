@@ -5,91 +5,96 @@
 **Stable branch:** `main`  
 **Current status date:** 2026-09-25
 
-## Merged backend foundation
+## Current state
 
-PR #6, commit `578267518d926e02617d147e972d1704762943b3`, merged the current CRM backend line into `main`.
+The planned CRM product foundation and full-stack workspace are implemented on `main`.
 
-The merged backend includes:
-- FastAPI service with versioned OpenAPI routing.
-- PostgreSQL/SQLAlchemy configuration and Alembic migrations.
-- Organization, user, membership, and role identity.
-- Argon2 password hashing.
-- Short-lived signed access JWTs.
-- Opaque refresh sessions with hashed tokens, rotation, locking, and CSRF binding.
-- Production secret/cookie validation.
-- Tenant membership and reusable owner/admin authorization.
-- Database-backed authentication throttling with HMAC fingerprints.
-- CRM core: companies, contacts, pipeline stages, opportunities, activities, tasks, and audit events.
-- Tenant-scoped audited CRUD/search/archive workflows.
-- Stage-driven opportunity state and cross-tenant relationship validation.
-- Customer 360 timeline using bounded SQL `UNION ALL` cursor pagination.
-- Request correlation IDs, security headers, safe internal errors, and database readiness.
-- Default sales pipeline stages at organization signup.
+The active mainline contains:
+- Multi-tenant FastAPI + PostgreSQL CRM backend.
+- Secure authentication and session lifecycle.
+- Tenant/role authorization and abuse-rate limiting.
+- Companies, contacts, pipeline stages, opportunities, activities, tasks, and audit events.
+- Customer 360 timeline with bounded cursor pagination.
 - Deterministic explainable attention queue.
-- Deterministic, idempotent workflow automation for opportunity win/loss transitions.
+- Deterministic idempotent workflow automation.
+- Transaction-safe contact CSV import with preview, validation, dry-run, commit, and audit trail.
+- Tenant-scoped saved contact views with validated filters and real execution.
+- Deterministic relationship-health scoring with explicit evidence.
+- Next.js frontend with a public landing page and authenticated workspace.
+- Secure refresh-cookie session restoration and CSRF-aware client requests.
+- Responsive dashboard, attention queue, contacts, relationship-health drawer, pipeline, saved views, and CSV import interfaces.
+- Browser smoke coverage and a real browser-to-FastAPI-to-PostgreSQL E2E flow.
+- CI that verifies exact pull-request heads, backend migrations/tests, frontend typecheck/build, browser smoke, and live browser E2E.
+
+## Merge history
+
+- PR #6 — cumulative CRM backend foundation — merged.
+- PR #7 — CSV import — merged.
+- PR #8 — saved views — merged.
+- PR #9 — relationship health — merged.
+- PR #10 — frontend workspace — merged.
+- PR #11 — real browser-to-backend E2E gate — merged.
+
+No pull requests remain open.
 
 ## Verification
 
-The authoritative pre-merge PR #6 run passed:
+The authoritative post-merge main CI run for commit `5550c812a46dd48ad771072e91b2e49b7f73fe96` passed:
 - PostgreSQL service startup.
 - Backend installation.
 - Ruff lint.
 - Python compilation.
-- All Alembic migrations through automation.
-- Full PostgreSQL-backed test suite: 44 tests passed.
+- Full Alembic migration chain.
+- Full PostgreSQL-backed backend test suite.
+- Frontend dependency installation.
+- TypeScript typecheck.
+- Next.js production build.
+- Chromium browser smoke test.
+- Real browser E2E against a live FastAPI server and PostgreSQL database.
 
-The CI workflow checks out the exact pull-request head SHA before testing, avoiding stale merge-ref verification.
+The real browser E2E exercises the actual signup flow, reads the database-backed dashboard, creates a contact through the UI, and verifies the updated workspace state.
 
-The local execution container does not have Docker/PostgreSQL tooling or external package installation, so local live-DB/Ruff verification is not claimed.
+## Migrations
 
-## Repository cleanup
+The active Alembic chain on `main` is linear through:
+`0001_bootstrap`,
+`0002_identity`,
+`0003_auth_sessions`,
+`0004_auth_rate_limits`,
+`0005_crm_core`,
+`0006_activity_tasks_audit`,
+`0007_timeline_indexes`,
+`0008_attention_indexes`,
+`0009_automation`,
+`0010_import_jobs`,
+`0011_saved_views`.
 
-Older overlapping PRs were superseded and closed:
-- PR #2 workflow automation
-- PR #3 saved views
-- PR #5 CSV import
+## Security and reliability notes
 
-Their branch implementations remain useful as historical/reference material, but their migration histories were based on stale repository states and are not the active implementation path.
+Successful signups do not consume the failure quota; only failed signup attempts are recorded for abuse control.
 
-## Current engineering phase
+Attention scoring is deterministic and evidence-based. Newly created contacts are not flagged as stale until their creation/activity age crosses the configured threshold.
 
-**Phase 4 — frontend integration and end-to-end product surface**
+Automation execution is idempotent through a unique rule/event key, and automation-created tasks remain linked to the originating opportunity and audit history.
 
-Next:
-1. Saved views and advanced search.
-3. Frontend foundation with real API integration.
-4. End-to-end, accessibility, security, performance, and final repository audit.
+All organization-scoped endpoints use reusable membership/role authorization and reject cross-tenant entity references.
 
-## CSV import — merged
+## Frontend verification scope
 
-The transaction-safe contact CSV import is now merged into `main` as PR #7 (`6d932508a89079c5a42bcd58e0096d236d620945`). It stages normalized rows, provides row-level validation, blocks duplicates, supports dry-run/revalidation, commits atomically, and records an auditable import-job completion event. The authoritative CI gate passed PostgreSQL migration and integration testing before merge.
+The frontend is responsive and mobile-safe, including horizontally contained data tables and full-width mobile drawers.
 
-## Saved views — merged
+The standard browser smoke test uses mocked API responses to verify rendering/layout behavior.
 
-Tenant-scoped saved contact views are now merged into `main` as PR #8 (`940d5061542918e76c9d74857a999133dd55cfae`). Views support validated filters, private/shared visibility, execution against the real contacts query, definition versioning, and audit events. The authoritative CI gate passed PostgreSQL migration `0011_saved_views` and the full integration suite before merge.
+The dedicated E2E test uses real FastAPI + PostgreSQL services and verifies a complete user journey through signup and contact creation.
 
-## CSV import target
+## Local verification limitation
 
-Import must be transaction-safe and operationally useful:
-- UTF-8 validation and bounded upload size.
-- Explicit header contract.
-- Maximum row count.
-- Preview before commit.
-- Per-row validation and normalized values.
-- Duplicate detection against existing contacts.
-- Dry-run mode.
-- Commit with rollback semantics.
-- Row-level error reporting.
-- Import audit trail and job status.
-- Organization-scoped permissions.
+The local execution container does not provide Docker/PostgreSQL client tooling or external package installation, so local live-DB verification is not claimed. The authoritative verification runs were executed by GitHub Actions with PostgreSQL 18 and Node/Chromium.
 
-## Recovery rule
+## Repository hygiene
 
-Before resuming after interruption, inspect Git refs, PR state, commits, migrations, tests, and the existing implementation. Do not recreate completed work or rewrite useful history.
+Older overlapping feature branches may remain as historical/reference branches. They are not the active implementation path.
 
-## Relationship health — merged
-
-Deterministic contact relationship health is now merged into `main` as PR #9 (`a764ae25062a99d572e5d876686785d7aa9bed82`). The endpoint returns a 0–100 heuristic score band plus explicit evidence for activity recency, 30-day engagement, open opportunities, and overdue incomplete tasks. The authoritative CI gate passed PostgreSQL migration and integration testing before merge.
+Before resuming after interruption, inspect Git refs, PR state, commits, migrations, tests, and existing implementation. Do not recreate completed work or rewrite useful history.
 
 Never mark a feature verified unless its relevant code path and tests have actually been exercised.
-
