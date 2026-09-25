@@ -75,14 +75,14 @@ def get_attention_queue(db: Session, *, organization_id: UUID, limit: int = 50) 
         or_(opportunity_is_overdue, opportunity_is_stale),
     )
 
-    contact_is_stale = or_(contact_last_activity.is_(None), contact_last_activity < contact_cutoff)
+    contact_is_stale = func.coalesce(contact_last_activity, Contact.created_at) < contact_cutoff
     contact_signal = select(
         Contact.id.label("entity_id"),
         literal("contact").label("entity_type"),
         literal(70).label("priority"),
         func.concat(Contact.first_name, " ", Contact.last_name).label("title"),
         case(
-            (contact_last_activity.is_(None), literal("Lead/prospect has no recorded activity")),
+            (contact_last_activity.is_(None), literal("Lead/prospect has gone 14+ days without recorded activity")),
             else_=literal("Lead/prospect has gone 14+ days without recorded activity"),
         ).label("reason"),
         literal(None).cast(DateTime(timezone=True)).label("due_at"),
