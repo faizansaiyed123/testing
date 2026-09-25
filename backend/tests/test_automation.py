@@ -37,13 +37,13 @@ def test_admin_can_create_rule_and_won_transition_runs_once(client, db_session) 
         role=MembershipRole.OWNER,
     )
     open_stage = PipelineStage(
-        organization=organization,
+        organization_id=organization.id,
         name="Proposal",
         order_index=30,
         win_probability=0.5,
     )
     won_stage = PipelineStage(
-        organization=organization,
+        organization_id=organization.id,
         name="Closed Won",
         order_index=50,
         win_probability=1,
@@ -53,7 +53,7 @@ def test_admin_can_create_rule_and_won_transition_runs_once(client, db_session) 
     opportunity = Opportunity(
         organization_id=organization.id,
         owner_user_id=user.id,
-        stage=open_stage,
+        stage_id=open_stage.id,
         name="Expansion Deal",
         status="open",
     )
