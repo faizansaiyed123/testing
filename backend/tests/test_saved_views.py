@@ -5,6 +5,7 @@ from sqlalchemy import select
 
 from app.auth.crypto import hash_password
 from app.auth.tokens import create_access_token
+from app.db.base import Base
 from app.models import Contact, Membership, MembershipRole, Organization, SavedView, User
 
 POSTGRES_DRIVER_AVAILABLE = find_spec("psycopg") is not None
@@ -160,5 +161,5 @@ def test_private_view_is_not_visible_cross_user_and_member_cannot_share(client, 
 
 
 def test_saved_view_model_is_registered() -> None:
-    assert "saved_views" in SavedView.metadata.tables if hasattr(SavedView, "metadata") else True
+    assert "saved_views" in Base.metadata.tables
     assert select(SavedView)
