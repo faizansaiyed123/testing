@@ -8,6 +8,7 @@ from app.auth.authorization import require_membership, require_roles
 from app.db.session import get_db
 from app.models import Membership, MembershipRole
 from app.schemas.standout import (
+    AutomationRunResponse,
     BusinessRuleResponse,
     BusinessRuleUpdate,
     DailyPlannerResponse,
@@ -16,7 +17,6 @@ from app.schemas.standout import (
     MergeResponse,
     RelationshipGraphResponse,
     StuckOpportunityResponse,
-    AutomationRunResponse,
     SystemHealthResponse,
 )
 from app.services.automation_history import get_automation_run, list_automation_runs
