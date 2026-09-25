@@ -6,6 +6,7 @@ from app.api.health import router as health_router
 from app.api.opportunities import router as opportunities_router
 from app.api.organizations import router as organizations_router
 from app.api.pipeline import router as pipeline_router
+from app.api.timeline import router as timeline_router
 from app.auth.routes import router as auth_router
 from app.core.config import get_settings
 
@@ -26,6 +27,7 @@ app.include_router(companies_router, prefix=settings.api_prefix)
 app.include_router(contacts_router, prefix=settings.api_prefix)
 app.include_router(pipeline_router, prefix=settings.api_prefix)
 app.include_router(opportunities_router, prefix=settings.api_prefix)
+app.include_router(timeline_router, prefix=settings.api_prefix)
 
 
 @app.get("/", include_in_schema=False)
