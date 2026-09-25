@@ -11,28 +11,20 @@ STALE_CONTACT_AFTER = timedelta(days=14)
 STALE_OPPORTUNITY_AFTER = timedelta(days=21)
 
 
-def get_attention_queue(
-    db: Session,
-    *,
-    organization_id: UUID,
-    limit: int = 50,
-) -> list[dict[str, Any]]:
+def get_attention_queue(db: Session, *, organization_id: UUID, limit: int = 50) -> list[dict[str, Any]]:
     now = datetime.now(UTC)
-    contact_stale_cutoff = now - STALE_CONTACT_AFTER
-    opportunity_stale_cutoff = now - STALE_OPPORTUNITY_AFTER
+    contact_cutoff = now - STALE_CONTACT_AFTER
+    opportunity_cutoff = now - STALE_OPPORTUNITY_AFTER
 
     contact_last_activity = (
         select(func.max(Activity.occurred_at))
-        .where(Activity.organization_id == organization_id)
-        .where(Activity.contact_id == Contact.id)
+        .where(Activity.organization_id == organization_id, Activity.contact_id == Contact.id)
         .correlate(Contact)
         .scalar_subquery()
     )
-
     opportunity_last_activity = (
         select(func.max(Activity.occurred_at))
-        .where(Activity.organization_id == organization_id)
-        .where(Activity.opportunity_id == Opportunity.id)
+        .where(Activity.organization_id == organization_id, Activity.opportunity_id == Opportunity.id)
         .correlate(Opportunity)
         .scalar_subquery()
     )
@@ -53,24 +45,21 @@ def get_attention_queue(
         Task.due_at < now,
     )
 
+    opportunity_is_overdue = and_(
+        Opportunity.expected_close_date.is_not(None),
+        Opportunity.expected_close_date < now.date(),
+    )
+    opportunity_is_stale = or_(
+        and_(opportunity_last_activity.is_(None), Opportunity.updated_at < opportunity_cutoff),
+        opportunity_last_activity < opportunity_cutoff,
+    )
     opportunity_signal = select(
         Opportunity.id.label("entity_id"),
         literal("opportunity").label("entity_type"),
-        case(
-            (
-                Opportunity.expected_close_date.is_not(None)
-                & (Opportunity.expected_close_date < now.date()),
-                90,
-            ),
-            else_=65,
-        ).label("priority"),
+        case((opportunity_is_overdue, 90), else_=65).label("priority"),
         Opportunity.name.label("title"),
         case(
-            (
-                Opportunity.expected_close_date.is_not(None)
-                & (Opportunity.expected_close_date < now.date()),
-                literal("Open opportunity is past its expected close date"),
-            ),
+            (opportunity_is_overdue, literal("Open opportunity is past its expected close date")),
             else_=literal("Open opportunity has had no recent recorded activity"),
         ).label("reason"),
         func.cast(Opportunity.expected_close_date, DateTime(timezone=True)).label("due_at"),
@@ -83,29 +72,17 @@ def get_attention_queue(
         Opportunity.organization_id == organization_id,
         Opportunity.deleted_at.is_(None),
         Opportunity.status == "open",
-        or_(
-            and_(
-                Opportunity.expected_close_date.is_not(None),
-                Opportunity.expected_close_date < now.date(),
-            ),
-            and_(
-                opportunity_last_activity.is_(None),
-                Opportunity.updated_at < opportunity_stale_cutoff,
-            ),
-            opportunity_last_activity < opportunity_stale_cutoff,
-        ),
+        or_(opportunity_is_overdue, opportunity_is_stale),
     )
 
+    contact_is_stale = or_(contact_last_activity.is_(None), contact_last_activity < contact_cutoff)
     contact_signal = select(
         Contact.id.label("entity_id"),
         literal("contact").label("entity_type"),
         literal(70).label("priority"),
         func.concat(Contact.first_name, " ", Contact.last_name).label("title"),
         case(
-            (
-                contact_last_activity.is_(None),
-                literal("Lead/prospect has no recorded activity"),
-            ),
+            (contact_last_activity.is_(None), literal("Lead/prospect has no recorded activity")),
             else_=literal("Lead/prospect has gone 14+ days without recorded activity"),
         ).label("reason"),
         literal(None).cast(DateTime(timezone=True)).label("due_at"),
@@ -114,15 +91,11 @@ def get_attention_queue(
     ).where(
         Contact.organization_id == organization_id,
         Contact.deleted_at.is_(None),
-        Contact.lifecycle.in_([ "lead", "prospect" ]),
-        or_(
-            contact_last_activity.is_(None),
-            contact_last_activity < contact_stale_cutoff,
-        ),
+        Contact.lifecycle.in_(["lead", "prospect"]),
+        contact_is_stale,
     )
 
     signals = union_all(task_signal, opportunity_signal, contact_signal).subquery()
-
     rows = db.execute(
         select(
             signals.c.entity_id,
@@ -133,12 +106,7 @@ def get_attention_queue(
             signals.c.due_at,
             signals.c.last_activity_at,
         )
-        .order_by(
-            signals.c.priority.desc(),
-            signals.c.sort_time.asc(),
-            signals.c.entity_id.asc(),
-        )
+        .order_by(signals.c.priority.desc(), signals.c.sort_time.asc(), signals.c.entity_id.asc())
         .limit(limit)
     ).mappings().all()
-
     return [dict(row) for row in rows]
