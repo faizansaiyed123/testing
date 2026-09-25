@@ -13,6 +13,7 @@ type Stage = { id: string; name: string; order_index: number; win_probability: s
 export default function OpportunitiesPage() {
   const { accessToken, organizationId } = useAuth();
   const [showCreate, setShowCreate] = useState(false);
+  const [selected, setSelected] = useState<Opportunity | null>(null);
   const [page, setPage] = useState(1);
   const pageSize = 25;
   const enabled = Boolean(accessToken && organizationId);
@@ -33,6 +34,23 @@ export default function OpportunitiesPage() {
     queryKey: ["pipeline-stuck", organizationId],
     enabled,
     queryFn: () => apiFetch<StuckOpportunityResponse>(prefix + "/pipeline/stuck?limit=10", {}, accessToken),
+  });
+
+  const update = useMutation({
+    mutationFn: ({ id, input }: { id: string; input: Record<string, unknown> }) =>
+      apiFetch<Opportunity>(`${prefix}/opportunities/${id}`, { method: "PATCH", body: input }, accessToken),
+    onSuccess: (opportunity) => {
+      void queryClient.invalidateQueries({ queryKey: ["opportunities", organizationId] });
+      setSelected(opportunity);
+    },
+  });
+
+  const archive = useMutation({
+    mutationFn: (id: string) => apiFetch<void>(`${prefix}/opportunities/${id}`, { method: "DELETE" }, accessToken),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["opportunities", organizationId] });
+      setSelected(null);
+    },
   });
 
   const create = useMutation({
@@ -84,7 +102,7 @@ export default function OpportunitiesPage() {
           <thead><tr><th>Opportunity</th><th>Amount</th><th>Status</th><th>Close date</th></tr></thead>
           <tbody>
             {items.map((item) => (
-              <tr key={item.id}>
+              <tr key={item.id} className="click-row" onClick={() => setSelected(item)}>
                 <td><strong>{item.name}</strong><small>{item.lost_reason ?? "Stage-driven workflow"}</small></td>
                 <td>{item.amount ? `₹${Number(item.amount).toLocaleString("en-IN")}` : "—"}</td>
                 <td><Badge tone={item.status === "won" ? "success" : item.status === "lost" ? "danger" : "info"}>{item.status}</Badge></td>
@@ -103,6 +121,17 @@ export default function OpportunitiesPage() {
             <Button variant="secondary" disabled={page >= Math.ceil(opportunities.data.total / opportunities.data.page_size) || opportunities.isFetching} onClick={() => setPage((value) => value + 1)}>Next</Button>
           </div>
         </div>
+      ) : null}
+      {selected ? (
+        <OpportunityDrawer
+          opportunity={selected}
+          stages={stages.data ?? []}
+          onClose={() => setSelected(null)}
+          onSave={(input) => update.mutate({ id: selected.id, input })}
+          onArchive={() => archive.mutate(selected.id)}
+          busy={update.isPending || archive.isPending}
+          error={update.error instanceof Error ? update.error.message : archive.error instanceof Error ? archive.error.message : ""}
+        />
       ) : null}
       {showCreate ? (
         <CreateOpportunity
@@ -160,6 +189,75 @@ function CreateOpportunity({
           <label>Expected close<input type="date" value={expectedCloseDate} onChange={(e) => setExpectedCloseDate(e.target.value)} /></label>
           {error ? <div className="form-error" role="alert">{error}</div> : null}
           <Button type="submit" disabled={busy || !stageId}>{busy ? "Creating…" : "Create opportunity"}</Button>
+        </form>
+      </aside>
+    </div>
+  );
+}
+
+
+function OpportunityDrawer({
+  opportunity,
+  stages,
+  onClose,
+  onSave,
+  onArchive,
+  busy,
+  error,
+}: {
+  opportunity: Opportunity;
+  stages: Stage[];
+  onClose: () => void;
+  onSave: (input: Record<string, unknown>) => void;
+  onArchive: () => void;
+  busy: boolean;
+  error: string;
+}) {
+  const currentStage = stages.find((stage) => stage.id === opportunity.stage_id);
+  const [name, setName] = useState(opportunity.name);
+  const [amount, setAmount] = useState(opportunity.amount ?? "");
+  const [stageId, setStageId] = useState(opportunity.stage_id);
+  const [expectedCloseDate, setExpectedCloseDate] = useState(opportunity.expected_close_date ?? "");
+  const [lostReason, setLostReason] = useState(opportunity.lost_reason ?? "");
+
+  React.useEffect(() => {
+    setName(opportunity.name);
+    setAmount(opportunity.amount ?? "");
+    setStageId(opportunity.stage_id);
+    setExpectedCloseDate(opportunity.expected_close_date ?? "");
+    setLostReason(opportunity.lost_reason ?? "");
+  }, [opportunity]);
+
+  const selectedStage = stages.find((stage) => stage.id === stageId) ?? currentStage;
+  const willBeLost = Boolean(selectedStage?.is_closed && !selectedStage.is_won);
+
+  function submit(event: FormEvent) {
+    event.preventDefault();
+    onSave({
+      name,
+      amount: amount ? Number(amount) : null,
+      stage_id: stageId,
+      expected_close_date: expectedCloseDate || null,
+      lost_reason: willBeLost ? lostReason : null,
+    });
+  }
+
+  return (
+    <div className="drawer-backdrop">
+      <aside className="drawer" role="dialog" aria-modal="true" aria-labelledby="opportunity-dialog-title">
+        <div className="drawer-head">
+          <div><span className="eyebrow">Opportunity detail</span><h2 id="opportunity-dialog-title">{opportunity.name}</h2><p>Status is derived from its pipeline stage.</p></div>
+          <button className="icon-button" onClick={onClose} aria-label="Close">×</button>
+        </div>
+        <form className="stack-form" onSubmit={submit}>
+          <label>Name<input value={name} onChange={(event) => setName(event.target.value)} required /></label>
+          <label>Amount<input type="number" min="0" step="0.01" value={amount} onChange={(event) => setAmount(event.target.value)} /></label>
+          <label>Stage<select value={stageId} onChange={(event) => setStageId(event.target.value)} required>{stages.map((stage) => <option key={stage.id} value={stage.id}>{stage.name}</option>)}</select></label>
+          {willBeLost ? <label>Lost reason<input value={lostReason} onChange={(event) => setLostReason(event.target.value)} required maxLength={300} /></label> : null}
+          <label>Expected close<input type="date" value={expectedCloseDate} onChange={(event) => setExpectedCloseDate(event.target.value)} /></label>
+          {error ? <div className="form-error" role="alert">{error}</div> : null}
+          <Button type="submit" disabled={busy || !stageId}>{busy ? "Saving…" : "Save changes"}</Button>
+          <Button variant="danger" disabled={busy} onClick={() => { if (window.confirm("Archive this opportunity?")) onArchive(); }}>Archive opportunity</Button>
         </form>
       </aside>
     </div>
