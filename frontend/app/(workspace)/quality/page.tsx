@@ -5,7 +5,7 @@ import { useState } from "react";
 import { useAuth } from "@/app/providers";
 import { apiFetch } from "@/lib/api";
 import type { DataQualityResponse, DuplicateCandidate, MergeResponse } from "@/lib/types";
-import { Badge, Button, SectionTitle, StatCard } from "@/components/ui";
+import { Badge, Button, SectionTitle, StatCard, ErrorState } from "@/components/ui";
 
 export default function QualityPage() {
   const { accessToken, organizationId, user } = useAuth();
@@ -53,7 +53,8 @@ export default function QualityPage() {
         action={<div className="live-chip"><span/>Deterministic</div>}
       />
 
-      {message ? <div className="callout">{message}</div> : null}
+      {message ? <div className="callout" role="status">{message}</div> : null}
+      {report.isError ? <ErrorState description={(report.error as Error).message} onRetry={() => void report.refetch()} /> : null}
 
       <div className="stats-grid">
         <StatCard label="Issues" value={summary?.total_issues ?? "—"} detail="actionable data-quality findings" accent="amber" />
