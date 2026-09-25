@@ -1,6 +1,6 @@
 import type { AuthResponse } from "@/lib/types";
 
-type ApiOptions = RequestInit & {
+type ApiOptions = Omit<RequestInit, "body"> & {
   body?: unknown;
   skipRefresh?: boolean;
 };
@@ -15,11 +15,16 @@ function csrfToken() {
   );
 }
 
-async function request<T>(path: string, options: ApiOptions, accessToken: string | null): Promise<T> {
-  const headers = new Headers(options.headers);
+async function request<T>(
+  path: string,
+  options: ApiOptions,
+  accessToken: string | null,
+): Promise<T> {
+  const { body, skipRefresh: _skipRefresh, ...requestOptions } = options;
+  const headers = new Headers(requestOptions.headers);
   headers.set("Accept", "application/json");
 
-  if (options.body !== undefined && !(options.body instanceof FormData)) {
+  if (body !== undefined && !(body instanceof FormData)) {
     headers.set("Content-Type", "application/json");
   }
   if (accessToken) headers.set("Authorization", `Bearer ${accessToken}`);
@@ -30,13 +35,13 @@ async function request<T>(path: string, options: ApiOptions, accessToken: string
   }
 
   const response = await fetch(`/api/v1${path}`, {
-    ...options,
+    ...requestOptions,
     headers,
     credentials: "include",
     body:
-      options.body === undefined || options.body instanceof FormData
-        ? (options.body as BodyInit | null | undefined)
-        : JSON.stringify(options.body),
+      body === undefined || body instanceof FormData
+        ? (body as BodyInit | null | undefined)
+        : JSON.stringify(body),
   });
 
   if (!response.ok) {
