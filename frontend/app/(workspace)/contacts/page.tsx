@@ -108,7 +108,7 @@ export default function ContactsPage() {
           <div className="form-error" style={{ margin: 16 }}>Unable to load contacts. {(contacts.error as Error)?.message}</div>
         ) : contacts.data?.items.length ? (
           <table className="data-table">
-            <thead><tr><th>Name</th><th>Role</th><th>Lifecycle</th><th>Email</th><th>Signal</th></tr></thead>
+            <thead><tr><th>Name</th><th>Title</th><th>Lifecycle</th><th>Email</th><th>Signal</th></tr></thead>
             <tbody>
               {contacts.data.items.map((contact) => (
                 <tr key={contact.id}>
