@@ -3,7 +3,7 @@ from uuid import UUID
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.models import Activity, Company, Contact, Opportunity, Task, User
+from app.models import Activity, Company, Contact, Opportunity, Task
 from app.schemas.standout import GraphEdge, GraphNode, RelationshipGraphResponse
 
 
