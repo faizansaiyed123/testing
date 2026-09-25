@@ -47,6 +47,9 @@ def test_attention_queue_explains_overdue_and_stale_signals(client, db_session) 
         name="New",
         order_index=10,
     )
+    db_session.add(stage)
+    db_session.flush()
+
     old_opportunity = Opportunity(
         organization_id=organization.id,
         owner_user_id=user.id,
@@ -63,13 +66,21 @@ def test_attention_queue_explains_overdue_and_stale_signals(client, db_session) 
         lifecycle="lead",
         created_at=datetime.now(UTC) - timedelta(days=30),
     )
+    fresh_contact = Contact(
+        organization_id=organization.id,
+        owner_user_id=user.id,
+        first_name="Fresh",
+        last_name="Lead",
+        lifecycle="lead",
+        created_at=datetime.now(UTC) - timedelta(days=1),
+    )
     overdue_task = Task(
         organization_id=organization.id,
         created_by_user_id=user.id,
         title="Follow up",
         due_at=datetime.now(UTC) - timedelta(hours=2),
     )
-    db_session.add_all([stage, old_opportunity, contact, overdue_task])
+    db_session.add_all([old_opportunity, contact, fresh_contact, overdue_task])
     db_session.flush()
 
     token = create_access_token(user.id)
@@ -91,6 +102,7 @@ def test_attention_queue_explains_overdue_and_stale_signals(client, db_session) 
         item["entity_id"] == str(contact.id) and item["priority"] == 70
         for item in items
     )
+    assert all(item["entity_id"] != str(fresh_contact.id) for item in items)
 
 
 @pytest.mark.skipif(
@@ -110,13 +122,16 @@ def test_attention_queue_is_tenant_scoped(client, db_session) -> None:
         user=other_user,
         role=MembershipRole.OWNER,
     )
+    db_session.add_all([other, other_user, other_member])
+    db_session.flush()
+
     foreign_task = Task(
         organization_id=other.id,
         created_by_user_id=other_user.id,
         title="Foreign overdue",
         due_at=datetime.now(UTC) - timedelta(hours=4),
     )
-    db_session.add_all([other, other_user, other_member, foreign_task])
+    db_session.add(foreign_task)
     db_session.flush()
 
     token = create_access_token(user.id)
