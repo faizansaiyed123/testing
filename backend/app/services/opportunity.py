@@ -90,7 +90,9 @@ def _resolve_status(stage: PipelineStage, requested_status: str | None) -> str:
         return "won"
     if stage.is_closed:
         return "lost"
-    return requested_status or "open"
+    if requested_status in {"won", "lost"}:
+        raise ValueError("Closed opportunities must use a closed pipeline stage")
+    return "open"
 
 
 def create_opportunity(
@@ -108,6 +110,9 @@ def create_opportunity(
     stage = get_stage(db, organization_id=organization_id, stage_id=stage_id)
     if stage is None:
         raise ValueError("Pipeline stage not found in this organization")
+    if stage.is_closed:
+        raise ValueError("New opportunities must start on an open pipeline stage")
+
     _validate_company(db, organization_id=organization_id, company_id=company_id)
     contact = _validate_contact(
         db,
@@ -125,7 +130,7 @@ def create_opportunity(
         stage_id=stage_id,
         name=name,
         amount=amount,
-        status=_resolve_status(stage, None),
+        status="open",
         expected_close_date=expected_close_date,
     )
     db.add(opportunity)
@@ -176,8 +181,14 @@ def update_opportunity(
     before = _snapshot(opportunity)
     for key, value in changes.items():
         setattr(opportunity, key, value)
+
     if "stage_id" in changes or "status" in changes:
-        opportunity.status = _resolve_status(stage, opportunity.status)
+        requested_status = changes.get("status")
+        opportunity.status = _resolve_status(
+            stage,
+            str(requested_status) if requested_status is not None else None,
+        )
+
     if opportunity.status == "lost" and not opportunity.lost_reason:
         raise ValueError("Lost opportunities require a lost reason")
     if opportunity.status != "lost":
