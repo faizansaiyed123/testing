@@ -3,6 +3,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useAuth } from "@/app/providers";
+import { useDrawerBehavior } from "@/lib/use-drawer-behavior";
 import { apiFetch } from "@/lib/api";
 import type { DataQualityResponse, DuplicateCandidate, MergeResponse } from "@/lib/types";
 import { Badge, Button, SectionTitle, StatCard, ErrorState } from "@/components/ui";
@@ -12,6 +13,7 @@ export default function QualityPage() {
   const enabled = Boolean(accessToken && organizationId);
   const prefix = organizationId ? `/organizations/${organizationId}` : "";
   const [selected, setSelected] = useState<DuplicateCandidate | null>(null);
+  useDrawerBehavior(Boolean(selected), () => setSelected(null));
   const [survivor, setSurvivor] = useState<"first" | "second">("first");
   const [message, setMessage] = useState("");
   const queryClient = useQueryClient();
