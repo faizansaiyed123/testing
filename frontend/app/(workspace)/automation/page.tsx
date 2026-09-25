@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/app/providers";
 import { apiFetch } from "@/lib/api";
@@ -142,7 +142,7 @@ function CreateAutomationRule({
   const [priority, setPriority] = useState<AutomationRule["action_config"]["priority"]>("normal");
   const [dueDays, setDueDays] = useState("1");
 
-  function submit(event: React.FormEvent) {
+  function submit(event: FormEvent) {
     event.preventDefault();
     onCreate({
       name,
