@@ -4,7 +4,7 @@ import { FormEvent, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/app/providers";
 import { apiFetch } from "@/lib/api";
-import type { Contact, ContactList, RelationshipHealth } from "@/lib/types";
+import type { Contact, ContactList, RelationshipHealth, TimelineResponse } from "@/lib/types";
 import { Badge, Button, EmptyState, SectionTitle } from "@/components/ui";
 
 export default function ContactsPage() {
@@ -12,6 +12,7 @@ export default function ContactsPage() {
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<Contact | null>(null);
   const [health, setHealth] = useState<RelationshipHealth | null>(null);
+  const [timeline, setTimeline] = useState<TimelineResponse | null>(null);
   const [showCreate, setShowCreate] = useState(false);
   const [error, setError] = useState("");
   const enabled = Boolean(accessToken && organizationId);
@@ -43,17 +44,21 @@ export default function ContactsPage() {
   async function openContact(contact: Contact) {
     setSelected(contact);
     setHealth(null);
-    try {
-      setHealth(
-        await apiFetch<RelationshipHealth>(
-          `${prefix}/contacts/${contact.id}/relationship-health`,
-          {},
-          accessToken,
-        ),
-      );
-    } catch {
-      setHealth(null);
-    }
+    setTimeline(null);
+    const [healthResult, timelineResult] = await Promise.allSettled([
+      apiFetch<RelationshipHealth>(
+        `${prefix}/contacts/${contact.id}/relationship-health`,
+        {},
+        accessToken,
+      ),
+      apiFetch<TimelineResponse>(
+        `${prefix}/contacts/${contact.id}/timeline?limit=20`,
+        {},
+        accessToken,
+      ),
+    ]);
+    if (healthResult.status === "fulfilled") setHealth(healthResult.value);
+    if (timelineResult.status === "fulfilled") setTimeline(timelineResult.value);
   }
 
   return (
@@ -126,6 +131,30 @@ export default function ContactsPage() {
                 </div>
               </>
             ) : <div className="panel-empty">Calculating relationship signal…</div>}
+            <div className="timeline-panel">
+              <h3>Recent context</h3>
+              {timeline?.items.length ? (
+                <div className="timeline-list">
+                  {timeline.items.map((item) => (
+                    <div key={`${item.kind}-${item.id}`} className="timeline-item">
+                      <span className={`timeline-dot timeline-${item.kind}`} />
+                      <div>
+                        <div className="timeline-meta">
+                          <Badge tone={item.kind === "audit" ? "neutral" : item.kind === "task" ? "warning" : "info"}>{item.kind}</Badge>
+                          <time dateTime={item.timestamp}>{new Date(item.timestamp).toLocaleString()}</time>
+                        </div>
+                        <strong>{item.title}</strong>
+                        {item.summary ? <p>{item.summary}</p> : null}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : timeline ? (
+                <div className="panel-empty compact-empty">No recent context yet.</div>
+              ) : (
+                <div className="panel-empty compact-empty">Loading recent context…</div>
+              )}
+            </div>
           </aside>
         </div>
       ) : null}
