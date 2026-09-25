@@ -39,7 +39,7 @@ No pull requests remain open.
 
 ## Verification
 
-The authoritative post-merge main CI run for commit `5550c812a46dd48ad771072e91b2e49b7f73fe96` passed:
+The authoritative current main CI run for commit `59e261ac121c7834c66b42c157f3e605d630c0cb` passed:
 - PostgreSQL service startup.
 - Backend installation.
 - Ruff lint.
@@ -86,6 +86,8 @@ The frontend is responsive and mobile-safe, including horizontally contained dat
 The standard browser smoke test uses mocked API responses to verify rendering/layout behavior.
 
 The dedicated E2E test uses real FastAPI + PostgreSQL services and verifies a complete user journey through signup and contact creation.
+
+The latest production fix initializes the first asynchronously loaded pipeline stage in the opportunity form so the create flow remains usable when stage data arrives after the component mounts.
 
 ## Local verification limitation
 
