@@ -2,66 +2,68 @@
 
 **Product:** Fieldline CRM  
 **Repository:** `faizansaiyed123/testing`  
-**Working branch:** `feature/attention-queue`  
+**Working branch:** `feature/automation`  
 **Stable branch:** `main`  
 **Status date:** 2026-09-25
 
-## Backend slices completed
+## Backend slices in this cumulative branch
 
-- FastAPI backend scaffold with versioned API routing.
-- PostgreSQL/SQLAlchemy configuration and Alembic migrations.
+- FastAPI backend scaffold with versioned routing and OpenAPI.
+- PostgreSQL/SQLAlchemy configuration and Alembic migration infrastructure.
 - Organization, user, membership, and role identity model.
-- Argon2 password hashing.
+- Argon2 password hashing and secure authentication lifecycle.
 - Short-lived signed access JWTs with issuer/audience/type/expiry validation.
-- Opaque refresh-token sessions with server-side hashes, rotation, locking, CSRF binding, and secure-cookie production checks.
+- Opaque refresh sessions with server-side hashes, rotation, locking, CSRF binding, and secure-cookie production checks.
 - Tenant membership and reusable role authorization dependencies.
-- Database-backed authentication throttling using HMAC fingerprints.
+- Database-backed authentication throttling with HMAC fingerprints.
 - CRM core schema: companies, contacts, pipeline stages, opportunities, activities, tasks, and audit events.
-- Tenant-scoped audited CRUD/search/archive workflows for companies and contacts.
-- Stage-driven opportunity state with cross-tenant relationship validation.
-- Customer 360 timeline using SQL `UNION ALL` and cursor pagination.
-- HTTP request IDs, safe internal-error responses, security headers, auth cache prevention, and database readiness probe.
-- Default sales pipeline stages on organization signup.
-- Explainable attention queue for overdue tasks, overdue open opportunities, stale open opportunities, and stale lead/prospect contacts.
+- Tenant-scoped audited company/contact CRUD, search, archive, and cross-tenant validation.
+- Stage-driven opportunity state with explicit win/loss invariants.
+- Customer 360 timeline using SQL `UNION ALL` with bounded cursor pagination.
+- HTTP request IDs, safe internal errors, security headers, auth cache prevention, and DB readiness.
+- Default sales pipeline stages during organization signup.
+- Explainable attention queue for overdue work, overdue open opportunities, stale open opportunities, and stale lead/prospect relationships.
+- Deterministic workflow automation: admin-managed rules, opportunity transition triggers, transaction-scoped task creation, execution records, unique event keys, idempotency, and task audit events.
 
-## Current branch state
+## Current GitHub review state
 
-`feature/crm-core` remains the CRM foundation branch and PR #1 remains open/unstable; live PostgreSQL CI is the merge gate.
+The repository already contains several older feature branches/PRs that were created independently from earlier repository states. They are not being treated as authoritative.
 
-`feature/attention-queue` is branched from the current CRM head and PR #4 is open for the attention queue. Its current head is under GitHub Actions verification.
+The cumulative branch `feature/automation` is the intended continuation because it contains the current linear backend implementation from the CRM foundation through attention and automation.
 
-## Attention queue contract
+A new PR from this branch is the authoritative merge candidate. It must pass the exact-head GitHub Actions gate before `main` is changed.
 
-The queue is deliberately deterministic and evidence-based; it is not presented as AI.
+## Automation contract
 
-Priority signals:
-- 95: overdue incomplete task.
-- 90: open opportunity past expected close date.
-- 65: open opportunity with no recent activity for 21+ days.
-- 70: lead/prospect with no recent activity for 14+ days.
+Supported deterministic triggers:
+- `opportunity.won`
+- `opportunity.lost`
 
-Every item includes the entity type/id, priority, human-readable reason, due timestamp when applicable, and last recorded activity timestamp. Results are tenant-scoped and bounded to a maximum of 100 items.
+Supported action:
+- `create_task`
+
+Execution is idempotent by `rule_id + event_key`. The event key includes opportunity id, previous status, new status, and target stage id. Duplicate delivery of the same transition does not create a second task.
+
+Automation rule creation and enable/disable operations are restricted to organization owners/admins. Automation-generated tasks retain normal CRM ownership, relationship links, and audit history.
 
 ## Verification state
 
-GitHub Actions has already demonstrated that the backend can install successfully, start PostgreSQL 18, compile, and apply the CRM migration chain through `0007_timeline_indexes`.
+GitHub Actions has successfully demonstrated PostgreSQL service startup, backend installation, source linting, Python compilation, and live Alembic execution on recent backend runs. Test failures found during development were inspected and corrected rather than bypassed.
 
-Attention branch migration `0008_attention_indexes` is present and will be validated by the current PR run.
+The current cumulative head still requires its own exact-head CI run because the branch has advanced since prior checks.
 
-The local execution container lacks Docker/PostgreSQL client tooling and external package installation is unavailable, so local live-DB/Ruff verification is not claimed.
+The local execution container cannot provide live PostgreSQL/Ruff verification, so no local live-DB pass is claimed.
 
-## Next engineering slices
+## Next slices after merge
 
-1. Finish and merge the attention queue after its exact-head CI passes.
-2. Resolve/merge the CRM-core PR without rewriting useful history.
-3. Deterministic workflow automation with idempotency and audit trails.
-4. Transaction-safe CSV import with validation, dry-run, rollback, and row-level error reporting.
-5. Saved views, advanced search, and explainable relationship health.
-6. Frontend foundation and real API integration.
-7. Full end-to-end, accessibility, security, performance, and final repository audit.
+1. Finish exact-head CI for the cumulative backend branch and merge it into `main`.
+2. Transaction-safe CSV import with dry-run, validation, rollback, and row-level error reporting.
+3. Saved views / advanced search / relationship health.
+4. Frontend foundation and real API integration.
+5. Full end-to-end, accessibility, security, performance, and repository audit.
 
 ## Recovery rule
 
-Before resuming after interruption, inspect Git refs, PR state, commits, migrations, tests, and existing implementation. Do not recreate completed work or rewrite useful history.
+Before resuming after interruption, inspect Git refs, PR state, commits, migrations, tests, and existing implementation. Never recreate completed work or rewrite useful history.
 
 Never mark a feature verified unless its relevant code path and tests have actually been exercised.
