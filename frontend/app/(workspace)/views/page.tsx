@@ -4,6 +4,7 @@ import { FormEvent, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/app/providers";
 import { apiFetch } from "@/lib/api";
+import { hasAdminAccess } from "@/lib/permissions";
 import type { ContactList, SavedView } from "@/lib/types";
 import { Badge, Button, EmptyState, ErrorState, SectionTitle } from "@/components/ui";
 
@@ -24,7 +25,7 @@ export default function ViewsPage() {
   });
 
   const results = useQuery({
-    queryKey: ["view-execute", selected?.id],
+    queryKey: ["view-execute", selected?.id, selected?.definition_version],
     enabled: Boolean(selected && accessToken),
     queryFn: () => apiFetch<ContactList>(`${prefix}/saved-views/${selected!.id}/execute?page_size=50`, {}, accessToken),
   });
@@ -61,7 +62,7 @@ export default function ViewsPage() {
     },
   });
 
-  const canShare = user?.memberships[0]?.role !== "member";
+  const canShare = hasAdminAccess(user?.memberships[0]?.role);
 
   return (
     <div className="page">
@@ -115,7 +116,7 @@ export default function ViewsPage() {
       {editing ? (
         <EditView
           view={editing}
-          canShare={user?.memberships[0]?.role !== "member"}
+          canShare={hasAdminAccess(user?.memberships[0]?.role)}
           onClose={() => setEditing(null)}
           onSave={(input) => update.mutate({ id: editing.id, input })}
           busy={update.isPending}
@@ -159,7 +160,7 @@ function CreateView({ canShare, onClose, onCreate, busy, error }: {
         company_id: null,
         owner_user_id: null,
         has_email: hasEmail,
-        sort: "name_asc",
+        sort,
       },
     });
   }
@@ -203,6 +204,7 @@ function EditView({
   const [lifecycle, setLifecycle] = useState(view.definition.lifecycle[0] ?? "");
   const [hasEmail, setHasEmail] = useState(view.definition.has_email ?? true);
   const [shared, setShared] = useState(view.shared);
+  const [sort, setSort] = useState(view.definition.sort);
 
   function submit(event: FormEvent) {
     event.preventDefault();
@@ -228,6 +230,7 @@ function EditView({
           <label>Contains<input value={query} onChange={(event) => setQuery(event.target.value)} /></label>
           <label>Lifecycle<select value={lifecycle} onChange={(event) => setLifecycle(event.target.value)}><option value="">Any lifecycle</option><option value="lead">lead</option><option value="prospect">prospect</option><option value="customer">customer</option><option value="churned">churned</option></select></label>
           <label className="check-row"><input type="checkbox" checked={hasEmail} onChange={(event) => setHasEmail(event.target.checked)} />Only contacts with email</label>
+          <label>Sort<select value={sort} onChange={(event) => setSort(event.target.value as SavedView["definition"]["sort"])}><option value="updated_desc">Recently updated</option><option value="updated_asc">Least recently updated</option><option value="name_asc">Name A–Z</option><option value="name_desc">Name Z–A</option></select></label>
           {canShare ? <label className="check-row"><input type="checkbox" checked={shared} onChange={(event) => setShared(event.target.checked)} />Share with the workspace</label> : null}
           {error ? <div className="form-error" role="alert">{error}</div> : null}
           <Button type="submit" disabled={busy}>{busy ? "Saving…" : "Save changes"}</Button>
