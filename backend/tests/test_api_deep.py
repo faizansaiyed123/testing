@@ -301,6 +301,9 @@ def test_timeline_attention_relationship_health_and_graph(client, db_session):
         lifecycle="lead",
         created_at=datetime.now(UTC) - timedelta(days=30),
     )
+    db_session.add_all([contact, stale])
+    db_session.flush()
+
     overdue = Task(
         organization_id=organization.id,
         created_by_user_id=owner.id,
@@ -318,7 +321,7 @@ def test_timeline_attention_relationship_health_and_graph(client, db_session):
         status="open",
         expected_close_date=(datetime.now(UTC) - timedelta(days=2)).date(),
     )
-    db_session.add_all([contact, stale, overdue, old_opportunity])
+    db_session.add_all([overdue, old_opportunity])
     db_session.flush()
     db_session.add(
         Activity(
