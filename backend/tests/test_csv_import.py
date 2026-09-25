@@ -165,3 +165,32 @@ def test_member_cannot_import_contacts(client, db_session) -> None:
         headers={"Authorization": f"Bearer {token}"},
     )
     assert response.status_code == 403
+
+from app.services.imports import MAX_FILE_SIZE, _parse_csv
+
+
+def test_csv_parser_rejects_missing_required_header() -> None:
+    with pytest.raises(ValueError, match="missing required headers"):
+        _parse_csv(b"email,phone\nuser@example.com,123\n")
+
+
+def test_csv_parser_rejects_unsupported_header() -> None:
+    with pytest.raises(ValueError, match="unsupported headers"):
+        _parse_csv(b"first_name,last_name,address\nAda,Lovelace,London\n")
+
+
+def test_csv_parser_accepts_utf8_sig() -> None:
+    headers, rows = _parse_csv("\ufefffirst_name,last_name\nAda,Lovelace\n".encode("utf-8"))
+    assert headers == ["first_name", "last_name"]
+    assert rows[0]["first_name"] == "Ada"
+
+
+def test_csv_parser_rejects_nul_bytes() -> None:
+    with pytest.raises(ValueError, match="NUL"):
+        _parse_csv(b"first_name,last_name\nAda,\x00Lovelace\n")
+
+
+def test_csv_parser_rejects_oversized_file() -> None:
+    content = b"first_name,last_name\nAda,Lovelace\n" + b"x" * (MAX_FILE_SIZE + 1)
+    with pytest.raises(ValueError, match="5 MB"):
+        _parse_csv(content)
