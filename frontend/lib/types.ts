@@ -296,3 +296,20 @@ export type PipelineStage = {
   is_closed: boolean;
   is_won: boolean;
 };
+
+
+export type AutomationRule = {
+  id: string;
+  organization_id: string;
+  name: string;
+  trigger: "opportunity.won" | "opportunity.lost";
+  action_type: "create_task";
+  action_config: {
+    title: string;
+    priority: "low" | "normal" | "high";
+    due_days: number;
+  };
+  enabled: boolean;
+  created_at: string;
+  updated_at: string;
+};
