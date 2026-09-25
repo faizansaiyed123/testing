@@ -77,6 +77,7 @@ def test_refresh_rotates_session_and_requires_csrf(client) -> None:
     assert new_refresh != old_refresh
 
     client.cookies.set("fieldline_refresh", old_refresh)
+    client.cookies.set("fieldline_csrf", old_csrf)
     reused = client.post(
         "/api/v1/auth/refresh",
         headers={"X-CSRF-Token": old_csrf},
