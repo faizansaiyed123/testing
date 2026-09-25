@@ -81,12 +81,16 @@ export default function ContactsPage() {
             <thead><tr><th>Name</th><th>Role</th><th>Lifecycle</th><th>Email</th><th>Signal</th></tr></thead>
             <tbody>
               {contacts.data.items.map((contact) => (
-                <tr key={contact.id} className="click-row" onClick={() => void openContact(contact)}>
-                  <td><strong>{contact.first_name} {contact.last_name}</strong><small>{contact.job_title ?? "—"}</small></td>
+                <tr key={contact.id}>
+                  <td>
+                    <button className="row-link" onClick={() => void openContact(contact)} aria-label={"Inspect " + contact.first_name + " " + contact.last_name}>
+                      <strong>{contact.first_name} {contact.last_name}</strong><small>{contact.job_title ?? "—"}</small>
+                    </button>
+                  </td>
                   <td>{contact.job_title ?? "—"}</td>
                   <td><Badge tone={contact.lifecycle === "customer" ? "success" : contact.lifecycle === "lead" ? "info" : "neutral"}>{contact.lifecycle}</Badge></td>
                   <td>{contact.email ?? "—"}</td>
-                  <td><span className="detail-link">Inspect →</span></td>
+                  <td><button className="detail-link-button" onClick={() => void openContact(contact)} aria-label={"Inspect " + contact.first_name + " " + contact.last_name + " relationship"}>Inspect →</button></td>
                 </tr>
               ))}
             </tbody>
@@ -98,9 +102,9 @@ export default function ContactsPage() {
 
       {selected ? (
         <div className="drawer-backdrop" onClick={() => setSelected(null)}>
-          <aside className="drawer" onClick={(e) => e.stopPropagation()}>
+          <aside className="drawer" role="dialog" aria-modal="true" aria-labelledby="relationship-drawer-title" onClick={(e) => e.stopPropagation()}>
             <div className="drawer-head">
-              <div><span className="eyebrow">Relationship</span><h2>{selected.first_name} {selected.last_name}</h2><p>{selected.email ?? "No email on file"}</p></div>
+              <div><span className="eyebrow">Relationship</span><h2 id="relationship-drawer-title">{selected.first_name} {selected.last_name}</h2><p>{selected.email ?? "No email on file"}</p></div>
               <button className="icon-button" onClick={() => setSelected(null)} aria-label="Close">×</button>
             </div>
             <div className="health-card">

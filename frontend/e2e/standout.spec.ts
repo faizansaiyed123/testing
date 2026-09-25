@@ -162,3 +162,55 @@ test("relationship graph and health console render", async ({ page }) => {
   await expect(page.getByText("database", { exact: true })).toBeVisible();
   await expect(page.getByText("pg trgm")).toBeVisible();
 });
+
+
+test("contact inspection is keyboard reachable", async ({ page }) => {
+  const organizationId = await seedSession(page);
+  await page.route("**/api/v1/organizations/" + organizationId + "/contacts?page_size=100", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        items: [{
+          id: "33333333-3333-3333-3333-333333333333",
+          organization_id: organizationId,
+          company_id: null,
+          owner_user_id: user.id,
+          first_name: "Ada",
+          last_name: "Lovelace",
+          email: "ada@example.com",
+          phone: null,
+          job_title: "Mathematician",
+          lifecycle: "customer",
+        }],
+        page: 1,
+        page_size: 100,
+        total: 1,
+      }),
+    });
+  });
+  await page.route("**/api/v1/organizations/" + organizationId + "/contacts/33333333-3333-3333-3333-333333333333/relationship-health", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        contact_id: "33333333-33333333-3333-333333333333",
+        score: 82,
+        band: "healthy",
+        last_activity_at: null,
+        activity_count_30d: 4,
+        open_opportunity_count: 1,
+        overdue_task_count: 0,
+        evidence: [],
+      }),
+    });
+  });
+  await page.goto("/contacts");
+  const inspect = page.getByRole("button", { name: "Inspect Ada Lovelace", exact: true });
+  await inspect.focus();
+  await expect(inspect).toBeFocused();
+  const outline = await inspect.evaluate((el) => getComputedStyle(el).outlineStyle);
+  expect(outline).toBe("solid");
+  await inspect.press("Enter");
+  await expect(page.getByRole("dialog", { name: "Ada Lovelace" })).toBeVisible();
+});

@@ -100,9 +100,9 @@ export default function QualityPage() {
 
       {selected ? (
         <div className="drawer-backdrop" onClick={() => setSelected(null)}>
-          <aside className="drawer" onClick={(event) => event.stopPropagation()}>
+          <aside className="drawer" role="dialog" aria-modal="true" aria-labelledby="merge-dialog-title" onClick={(event) => event.stopPropagation()}>
             <div className="drawer-head">
-              <div><span className="eyebrow">Controlled merge</span><h2>Choose the survivor</h2><p>Only the selected record remains active. Linked history is reassigned transactionally.</p></div>
+              <div><span className="eyebrow">Controlled merge</span><h2 id="merge-dialog-title">Choose the survivor</h2><p>Only the selected record remains active. Linked history is reassigned transactionally.</p></div>
               <button className="icon-button" onClick={() => setSelected(null)} aria-label="Close">×</button>
             </div>
             <div className="compare-grid">
