@@ -244,6 +244,7 @@ def logout(request: Request, response: Response, db: Session = Depends(get_db)) 
             session.revoked_at = datetime.now(UTC)
             db.commit()
     _clear_session_cookies(response)
+    response.status_code = status.HTTP_204_NO_CONTENT
     return response
 
 
