@@ -25,6 +25,9 @@ def test_opportunity_workflow(client, db_session) -> None:
         user=user,
         role=MembershipRole.OWNER,
     )
+    db_session.add_all([organization, user, membership])
+    db_session.flush()
+
     stage = PipelineStage(
         organization=organization,
         name="Proposal",
@@ -36,7 +39,7 @@ def test_opportunity_workflow(client, db_session) -> None:
         owner_user_id=user.id,
         name="Sales Company",
     )
-    db_session.add_all([organization, user, membership, stage, company])
+    db_session.add_all([stage, company])
     db_session.flush()
 
     token = create_access_token(user.id)
@@ -111,6 +114,8 @@ def test_opportunity_rejects_cross_tenant_company(client, db_session) -> None:
         password_hash=hash_password("Correct Horse Battery Staple"),
     )
     member = Membership(organization=org, user=user, role=MembershipRole.OWNER)
+    db_session.add_all([org, user, member])
+    db_session.flush()
 
     other = Organization(name="Two", slug=f"two-{id(db_session)}")
     other_user = User(
@@ -133,9 +138,20 @@ def test_opportunity_rejects_cross_tenant_company(client, db_session) -> None:
         owner_user_id=other_user.id,
         name="Other Company",
     )
-    db_session.add_all(
-        [org, user, member, other, other_user, other_member, other_stage, other_company]
+    db_session.add_all([other, other_user, other_member])
+    db_session.flush()
+
+    other_stage = PipelineStage(
+        organization_id=other.id,
+        name="New",
+        order_index=10,
     )
+    other_company = Company(
+        organization_id=other.id,
+        owner_user_id=other_user.id,
+        name="Other Company",
+    )
+    db_session.add_all([other_stage, other_company])
     db_session.flush()
 
     token = create_access_token(user.id)
