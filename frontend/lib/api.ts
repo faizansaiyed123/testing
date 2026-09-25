@@ -115,5 +115,5 @@ export async function apiFetch<T>(
 }
 
 export function refreshSession() {
-  return refreshAccessToken();
+  return request<AuthResponse>("/auth/refresh", { method: "POST" }, null);
 }
