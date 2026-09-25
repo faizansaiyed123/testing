@@ -339,3 +339,7 @@ select:focus-visible {
   *,*::before,*::after{scroll-behavior:auto!important;transition-duration:.01ms!important;animation-duration:.01ms!important;animation-iteration-count:1!important}
   .preview-window{transform:none}
 }
+
+.graph-overflow{display:flex;flex-wrap:wrap;gap:8px;padding:10px 12px 2px}.graph-overflow span{border:1px solid var(--line);border-radius:999px;padding:5px 8px;color:#758980;font-size:10px}
+.graph-text{margin:10px 12px 0;border-top:1px solid var(--line);padding:10px 0;color:var(--muted);font-size:11px}.graph-text summary{cursor:pointer;color:#a8b8b0;font-weight:700}.graph-text ul{margin:10px 0 0;padding-left:18px;line-height:1.7}
+.panel-actions{display:flex;gap:8px;align-items:center}
