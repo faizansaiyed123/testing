@@ -3,13 +3,12 @@ from importlib.util import find_spec
 from uuid import uuid4
 
 import pytest
-from sqlalchemy import func, select
+from sqlalchemy import select
 
 from app.auth.crypto import hash_password
 from app.auth.tokens import create_access_token
 from app.models import (
     Activity,
-    AutomationRule,
     Company,
     Contact,
     Membership,
