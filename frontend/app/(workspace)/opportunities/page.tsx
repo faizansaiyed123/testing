@@ -13,14 +13,16 @@ type Stage = { id: string; name: string; order_index: number; win_probability: s
 export default function OpportunitiesPage() {
   const { accessToken, organizationId } = useAuth();
   const [showCreate, setShowCreate] = useState(false);
+  const [page, setPage] = useState(1);
+  const pageSize = 25;
   const enabled = Boolean(accessToken && organizationId);
   const queryClient = useQueryClient();
   const prefix = organizationId ? `/organizations/${organizationId}` : "";
 
   const opportunities = useQuery({
-    queryKey: ["opportunities", organizationId],
+    queryKey: ["opportunities", organizationId, page],
     enabled,
-    queryFn: () => apiFetch<OpportunityList>(`${prefix}/opportunities?page_size=100`, {}, accessToken),
+    queryFn: () => apiFetch<OpportunityList>(`${prefix}/opportunities?page=${page}&page_size=${pageSize}`, {}, accessToken),
   });
   const stages = useQuery({
     queryKey: ["pipeline-stages", organizationId],
@@ -93,6 +95,15 @@ export default function OpportunitiesPage() {
         </table>
         {!items.length && !opportunities.isLoading ? <div className="panel-empty">No opportunities yet.</div> : null}
       </div>
+      {opportunities.data && opportunities.data.total > pageSize ? (
+        <div className="pagination" aria-label="Opportunities pagination">
+          <span>Page {opportunities.data.page} of {Math.ceil(opportunities.data.total / opportunities.data.page_size)}</span>
+          <div>
+            <Button variant="secondary" disabled={page <= 1 || opportunities.isFetching} onClick={() => setPage((value) => Math.max(1, value - 1))}>Previous</Button>
+            <Button variant="secondary" disabled={page >= Math.ceil(opportunities.data.total / opportunities.data.page_size) || opportunities.isFetching} onClick={() => setPage((value) => value + 1)}>Next</Button>
+          </div>
+        </div>
+      ) : null}
       {showCreate ? (
         <CreateOpportunity
           stages={stages.data ?? []}
