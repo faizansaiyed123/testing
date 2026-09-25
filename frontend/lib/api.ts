@@ -5,6 +5,18 @@ type ApiOptions = Omit<RequestInit, "body"> & {
   skipRefresh?: boolean;
 };
 
+type AccessTokenListener = (accessToken: string) => void;
+
+let accessTokenListener: AccessTokenListener | null = null;
+let refreshInFlight: Promise<AuthResponse> | null = null;
+
+export function registerAccessTokenListener(listener: AccessTokenListener) {
+  accessTokenListener = listener;
+  return () => {
+    if (accessTokenListener === listener) accessTokenListener = null;
+  };
+}
+
 function csrfToken() {
   if (typeof document === "undefined") return "";
   return (
@@ -61,6 +73,20 @@ async function request<T>(
   return (await response.json()) as T;
 }
 
+function refreshAccessToken() {
+  if (!refreshInFlight) {
+    refreshInFlight = request<AuthResponse>("/auth/refresh", { method: "POST" }, null)
+      .then((session) => {
+        accessTokenListener?.(session.access_token);
+        return session;
+      })
+      .finally(() => {
+        refreshInFlight = null;
+      });
+  }
+  return refreshInFlight;
+}
+
 export async function apiFetch<T>(
   path: string,
   options: ApiOptions = {},
@@ -71,7 +97,7 @@ export async function apiFetch<T>(
   } catch (error) {
     const status = (error as { status?: number }).status;
     if (status === 401 && !options.skipRefresh && path !== "/auth/refresh") {
-      const session = await request<AuthResponse>("/auth/refresh", { method: "POST" }, null);
+      const session = await refreshAccessToken();
       return request<T>(path, options, session.access_token);
     }
     throw error;
@@ -79,5 +105,5 @@ export async function apiFetch<T>(
 }
 
 export function refreshSession() {
-  return request<AuthResponse>("/auth/refresh", { method: "POST" }, null);
+  return refreshAccessToken();
 }
