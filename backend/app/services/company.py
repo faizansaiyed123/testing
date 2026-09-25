@@ -1,3 +1,4 @@
+from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID
 
@@ -123,7 +124,7 @@ def archive_company(
     actor_user_id: UUID,
 ) -> Company:
     before = _snapshot(company)
-    company.deleted_at = func.now()
+    company.deleted_at = datetime.now(UTC)
     db.flush()
     record_audit(
         db,
