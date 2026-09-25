@@ -31,6 +31,7 @@ from app.auth.tokens import create_access_token, create_refresh_token, hash_refr
 from app.core.config import get_settings
 from app.db.session import get_db
 from app.models import AuthSession, Membership, MembershipRole, Organization, User
+from app.services.pipeline import create_default_pipeline
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -145,6 +146,7 @@ def signup(
     db.add_all([organization, user, membership])
     try:
         db.flush()
+        create_default_pipeline(db, organization.id)
         refresh_token, csrf_token = _create_session(db, user.id)
         db.commit()
         user = db.scalar(
@@ -180,7 +182,7 @@ def login(
         .where(func.lower(User.email) == email)
         .limit(1)
     )
-    if user is None or not user.is_active or not verify_password(user.password_hash, payload.password):
+    if user is None or not user.is_active or not verify_password(payload.password, user.password_hash):
         record_failure(db, "login-email", login_key, LOGIN_EMAIL_LIMIT, LOGIN_WINDOW)
         record_failure(db, "login-ip", client_ip, LOGIN_IP_LIMIT, LOGIN_WINDOW)
         raise HTTPException(
