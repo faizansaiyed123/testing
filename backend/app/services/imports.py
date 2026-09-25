@@ -5,8 +5,7 @@ from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID
 
-from sqlalchemy import func, select
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.models import Contact, ImportJob, ImportRow
@@ -154,7 +153,7 @@ def _current_duplicate_errors(
 
 def _preview_response(job: ImportJob, rows: list[ImportRow]) -> dict[str, Any]:
     errors = [
-        ImportRowError(row_number=row.row_number, errors=[item["message"] for item in row.errors])
+        {"row_number": row.row_number, "errors": [item["message"] for item in row.errors]}
         for row in rows
         if row.status != "valid"
     ]
