@@ -2,7 +2,7 @@
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
-import { apiFetch, refreshSession } from "@/lib/api";
+import { apiFetch, refreshSession, registerAccessTokenListener } from "@/lib/api";
 import type { AuthResponse, User } from "@/lib/types";
 
 const queryClient = new QueryClient();
@@ -35,7 +35,9 @@ function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
+    const unregister = registerAccessTokenListener(setAccessToken);
     let cancelled = false;
+
     void refreshSession()
       .then((response) => {
         if (!cancelled) setSession(response);
@@ -49,8 +51,10 @@ function AuthProvider({ children }: { children: React.ReactNode }) {
       .finally(() => {
         if (!cancelled) setLoading(false);
       });
+
     return () => {
       cancelled = true;
+      unregister();
     };
   }, []);
 
