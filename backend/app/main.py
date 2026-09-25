@@ -1,5 +1,6 @@
 from fastapi import FastAPI, Request
 
+from app.api.attention import router as attention_router
 from app.api.companies import router as companies_router
 from app.api.contacts import router as contacts_router
 from app.api.health import router as health_router
@@ -32,6 +33,7 @@ app.include_router(contacts_router, prefix=settings.api_prefix)
 app.include_router(pipeline_router, prefix=settings.api_prefix)
 app.include_router(opportunities_router, prefix=settings.api_prefix)
 app.include_router(timeline_router, prefix=settings.api_prefix)
+app.include_router(attention_router, prefix=settings.api_prefix)
 
 
 @app.get("/", include_in_schema=False)
