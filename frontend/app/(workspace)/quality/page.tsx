@@ -5,6 +5,7 @@ import { useState } from "react";
 import { useAuth } from "@/app/providers";
 import { useDrawerBehavior } from "@/lib/use-drawer-behavior";
 import { apiFetch } from "@/lib/api";
+import { hasAdminAccess } from "@/lib/permissions";
 import type { DataQualityResponse, DuplicateCandidate, MergeResponse } from "@/lib/types";
 import { Badge, Button, SectionTitle, StatCard, ErrorState } from "@/components/ui";
 
@@ -113,7 +114,7 @@ export default function QualityPage() {
               <button className={survivor === "second" ? "compare-card active" : "compare-card"} onClick={() => setSurvivor("second")}><span>RECORD B</span><strong>{selected.second_label}</strong><small>{selected.reasons.join(" · ")}</small></button>
             </div>
             <div className="merge-warning"><strong>This is irreversible at the record level.</strong><p>The merged record is soft-deleted, related activities/tasks/opportunities move to the survivor, and two audit events are written.</p></div>
-            {user?.memberships[0]?.role !== "member" ? <Button disabled={merge.isPending} onClick={() => merge.mutate()}>{merge.isPending ? "Merging…" : `Merge into ${survivor === "first" ? "Record A" : "Record B"}`}</Button> : <div className="form-error">Owner/admin access required.</div>}
+            {hasAdminAccess(user?.memberships[0]?.role) ? <Button disabled={merge.isPending} onClick={() => merge.mutate()}>{merge.isPending ? "Merging…" : `Merge into ${survivor === "first" ? "Record A" : "Record B"}`}</Button> : <div className="form-error">Owner/admin access required.</div>}
           </aside>
         </div>
       ) : null}
