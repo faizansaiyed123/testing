@@ -64,9 +64,7 @@ async function request<T>(
     } catch {
       // Keep the status-derived message.
     }
-    const error = new Error(message);
-    Object.assign(error, { status: response.status });
-    throw error;
+    throw new ApiError(response.status, message);
   }
 
   if (response.status === 204) return undefined as T;
@@ -85,6 +83,18 @@ function refreshAccessToken() {
       });
   }
   return refreshInFlight;
+}
+
+export class ApiError extends Error {
+  readonly status: number;
+  readonly detail: string;
+
+  constructor(status: number, detail: string) {
+    super(detail);
+    this.name = "ApiError";
+    this.status = status;
+    this.detail = detail;
+  }
 }
 
 export async function apiFetch<T>(
