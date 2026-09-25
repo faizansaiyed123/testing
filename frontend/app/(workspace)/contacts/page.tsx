@@ -195,14 +195,6 @@ function ContactDrawer({
     setLifecycle(contact.lifecycle);
   }, [contact]);
 
-  useEffect(() => {
-    const handleKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose();
-    };
-    window.addEventListener("keydown", handleKey);
-    return () => window.removeEventListener("keydown", handleKey);
-  }, [onClose]);
-
   function submit(event: FormEvent) {
     event.preventDefault();
     onSave({
