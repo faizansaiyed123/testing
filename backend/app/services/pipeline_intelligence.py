@@ -1,12 +1,12 @@
 from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
-from sqlalchemy import String, and_, cast, exists, func, select
+from sqlalchemy import String, cast, exists, func, select
 from sqlalchemy.orm import Session
 
 from app.models import Activity, AuditEvent, Opportunity, PipelineStage, Task
-from app.services.business_rules import get_rule_value
 from app.schemas.standout import StuckOpportunity
+from app.services.business_rules import get_rule_value
 
 
 def get_stuck_opportunities(
