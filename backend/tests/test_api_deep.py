@@ -138,7 +138,7 @@ def test_health_and_auth_end_to_end(client, db_session):
 
     me = client.get("/api/v1/auth/me", headers={"Authorization": f"Bearer {body['access_token']}"})
     assert me.status_code == 200
-    assert me.json()["user"] if "user" in me.json() else me.json()["email"] == signup_payload["email"]
+    assert me.json()["email"] == signup_payload["email"]
 
     bad_login = client.post(
         "/api/v1/auth/login",
@@ -153,9 +153,13 @@ def test_health_and_auth_end_to_end(client, db_session):
     assert refresh.status_code == 200
     assert refresh.json()["access_token"] != login.json()["access_token"]
 
-    logout = client.post("/api/v1/auth/logout", headers={"X-CSRF-Token": client.cookies.get("fieldline_csrf")})
+    old_refresh = client.cookies.get("fieldline_refresh")
+    old_csrf = client.cookies.get("fieldline_csrf")
+    logout = client.post("/api/v1/auth/logout", headers={"X-CSRF-Token": old_csrf})
     assert logout.status_code == 204
-    assert client.post("/api/v1/auth/refresh", headers={"X-CSRF-Token": client.cookies.get("fieldline_csrf", "")}).status_code == 401
+    client.cookies.set("fieldline_refresh", old_refresh)
+    client.cookies.set("fieldline_csrf", old_csrf)
+    assert client.post("/api/v1/auth/refresh", headers={"X-CSRF-Token": old_csrf}).status_code == 401
 
     organization = db_session.scalar(select(Organization).where(Organization.slug == signup_payload["organization_name"].lower().replace(" ", "-")))
     assert organization is not None
