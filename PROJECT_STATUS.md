@@ -7,39 +7,47 @@
 
 ## Verified
 
-- GitHub connection is active with push/admin access to the repository.
+- GitHub connection is active with push/admin access.
 - `main` is the stable branch.
-- Product name and core principles are documented.
-- CRM/product and security/engineering research has been completed for the initial architecture.
-- Initial repository history has been preserved; no force-push or history rewrite is required.
+- Product foundation and architecture decisions are documented.
+- Backend FastAPI scaffold is implemented.
+- Backend unit/API tests currently pass in the available environment.
+- PostgreSQL configuration and Alembic migration wiring are implemented.
+- Alembic offline SQL generation succeeds.
 
 ## Current phase
 
 **Phase 0 — foundation and backend architecture**
 
-The next implementation increments are database configuration, migration infrastructure, application settings, health endpoints, and the first automated tests.
+Completed slices:
+1. product foundation and engineering rules
+2. FastAPI backend scaffold
+3. PostgreSQL/SQLAlchemy configuration and migration infrastructure
 
-## Chosen product shape
+Next:
+1. database health/readiness endpoint
+2. CI baseline
+3. organization/user domain model
+4. authentication and authorization
 
-Fieldline is a workflow-first CRM for small teams. The primary experience is not a vanity dashboard; it is a dependable workspace that surfaces customer context, pipeline movement, follow-up risk, data-quality problems, and auditable automation.
+## Environment limitations
 
-## Differentiating feature set
+The execution container currently has no Docker/PostgreSQL client and does not have the `psycopg` or Ruff packages installed. Package installation from the external package index is blocked by the execution environment's network configuration. Consequently, live PostgreSQL connectivity and Ruff execution remain **blocked/unverified** here. This does not change the repository's declared dependencies or deployment design.
 
-The initial scope is intentionally narrow and coherent:
+## Product scope
 
-1. Customer 360 timeline
-2. Explainable attention queue / follow-up intelligence
-3. Duplicate detection with safe merge and audit trail
-4. Lightweight deterministic workflow automation
-5. Transaction-safe CSV import with preview and row-level problem resolution
-6. Saved views and advanced search
-7. Explainable relationship health signals
-8. Audit history for important changes
+Fieldline focuses on:
+- Customer 360 timeline
+- explainable attention/follow-up signals
+- duplicate detection and safe merge
+- deterministic workflow automation
+- transaction-safe CSV import
+- saved views and advanced search
+- explainable relationship health
+- audit history
 
-## Engineering quality gates
+The system is intentionally designed as a modular monolith until measured requirements justify additional infrastructure.
 
-Every feature must be backed by appropriate tests and verified against the real code path before it is described as complete. Release readiness includes backend, database, frontend, integration, security, performance, documentation, and reproducibility checks.
+## Rule
 
-## Known repository constraint
-
-The connected GitHub capability does not expose repository creation or rename operations. An existing empty `testing` repository was therefore used as the working repository rather than pretending a new repository was created. This will remain explicit in project state until a dedicated repository can be created through an available GitHub capability.
+Never mark a feature “verified” unless its relevant code path and tests have actually been exercised.
