@@ -50,6 +50,9 @@ def test_admin_can_create_rule_and_won_transition_runs_once(client, db_session) 
         is_closed=True,
         is_won=True,
     )
+    db_session.add_all([organization, user, membership, open_stage, won_stage])
+    db_session.flush()
+
     opportunity = Opportunity(
         organization_id=organization.id,
         owner_user_id=user.id,
@@ -57,9 +60,7 @@ def test_admin_can_create_rule_and_won_transition_runs_once(client, db_session) 
         name="Expansion Deal",
         status="open",
     )
-    db_session.add_all(
-        [organization, user, membership, open_stage, won_stage, opportunity]
-    )
+    db_session.add(opportunity)
     db_session.flush()
 
     token = create_access_token(user.id)
