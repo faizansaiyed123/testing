@@ -2,6 +2,7 @@ from datetime import datetime
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.auth.authorization import require_membership
@@ -24,7 +25,7 @@ def contact_timeline(
     before_id: UUID | None = Query(default=None),
 ) -> TimelineResponse:
     contact_exists = db.scalar(
-        __import__("sqlalchemy").select(Contact.id)
+        select(Contact.id)
         .where(Contact.organization_id == organization_id)
         .where(Contact.id == contact_id)
         .where(Contact.deleted_at.is_(None))
