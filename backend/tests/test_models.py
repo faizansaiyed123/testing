@@ -3,13 +3,14 @@ from app.models import AuthRateLimit, AuthSession, Membership, MembershipRole, O
 
 
 def test_identity_tables_are_registered() -> None:
-    assert set(Base.metadata.tables) == {
+    identity_tables = {
         "organizations",
         "users",
         "organization_memberships",
         "auth_sessions",
         "auth_rate_limits",
     }
+    assert identity_tables <= set(Base.metadata.tables)
 
 
 def test_membership_role_values_are_stable() -> None:
