@@ -53,13 +53,12 @@ Their branch implementations remain useful as historical/reference material, but
 
 ## Current engineering phase
 
-**Phase 3 — workflow depth and data operations**
+**Phase 4 — frontend integration and end-to-end product surface**
 
 Next:
 1. Saved views and advanced search.
-3. Relationship health and explainable prioritization improvements.
-4. Frontend foundation with real API integration.
-5. End-to-end, accessibility, security, performance, and final repository audit.
+3. Frontend foundation with real API integration.
+4. End-to-end, accessibility, security, performance, and final repository audit.
 
 ## CSV import — merged
 
@@ -87,6 +86,10 @@ Import must be transaction-safe and operationally useful:
 ## Recovery rule
 
 Before resuming after interruption, inspect Git refs, PR state, commits, migrations, tests, and the existing implementation. Do not recreate completed work or rewrite useful history.
+
+## Relationship health — merged
+
+Deterministic contact relationship health is now merged into `main` as PR #9 (`a764ae25062a99d572e5d876686785d7aa9bed82`). The endpoint returns a 0–100 heuristic score band plus explicit evidence for activity recency, 30-day engagement, open opportunities, and overdue incomplete tasks. The authoritative CI gate passed PostgreSQL migration and integration testing before merge.
 
 Never mark a feature verified unless its relevant code path and tests have actually been exercised.
 
