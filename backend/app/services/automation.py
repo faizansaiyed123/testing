@@ -9,6 +9,16 @@ from app.models import AutomationRule, AutomationRun, Opportunity, Task
 from app.services.audit import record_audit
 
 
+def _automation_opportunity_snapshot(opportunity: Opportunity) -> dict[str, str | None]:
+    return {
+        "id": str(opportunity.id),
+        "organization_id": str(opportunity.organization_id),
+        "status": opportunity.status,
+        "stage_id": str(opportunity.stage_id),
+        "name": opportunity.name,
+    }
+
+
 def list_rules(db: Session, *, organization_id: UUID) -> list[AutomationRule]:
     return db.scalars(
         select(AutomationRule)
