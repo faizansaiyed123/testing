@@ -10,6 +10,16 @@ from sqlalchemy.orm import Session, selectinload
 
 from app.auth.crypto import hash_password, verify_password
 from app.auth.dependencies import get_current_user_id
+from app.auth.rate_limit import (
+    LOGIN_EMAIL_LIMIT,
+    LOGIN_IP_LIMIT,
+    LOGIN_WINDOW,
+    SIGNUP_IP_LIMIT,
+    SIGNUP_WINDOW,
+    check_allowed,
+    clear_failures,
+    record_attempt,
+)
 from app.auth.schemas import AuthResponse, LoginRequest, RefreshResponse, SignupRequest, UserResponse
 from app.auth.tokens import create_access_token, create_refresh_token, hash_refresh_token
 from app.core.config import get_settings
@@ -100,7 +110,11 @@ def _validate_session_csrf(csrf_token: str, session: AuthSession) -> None:
 
 
 @router.post("/signup", response_model=AuthResponse, status_code=status.HTTP_201_CREATED)
-def signup(payload: SignupRequest, response: Response, db: Session = Depends(get_db)) -> AuthResponse:
+def signup(payload: SignupRequest, request: Request, response: Response, db: Session = Depends(get_db)) -> AuthResponse:
+    client_ip = request.client.host if request.client else "unknown"
+    check_allowed(db, "signup-ip", client_ip, SIGNUP_IP_LIMIT, SIGNUP_WINDOW)
+    record_attempt(db, "signup-ip", client_ip, SIGNUP_IP_LIMIT, SIGNUP_WINDOW)
+
     email = str(payload.email).lower()
     slug = "-".join(payload.organization_name.lower().split())[:80].strip("-") or "organization"
     if not slug[0].isalnum():
@@ -134,14 +148,22 @@ def signup(payload: SignupRequest, response: Response, db: Session = Depends(get
 
 
 @router.post("/login", response_model=AuthResponse)
-def login(payload: LoginRequest, response: Response, db: Session = Depends(get_db)) -> AuthResponse:
+def login(payload: LoginRequest, request: Request, response: Response, db: Session = Depends(get_db)) -> AuthResponse:
     email = str(payload.email).lower()
+    client_ip = request.client.host if request.client else "unknown"
+    login_key = f"{email}|{client_ip}"
+    check_allowed(db, "login-email", login_key, LOGIN_EMAIL_LIMIT, LOGIN_WINDOW)
+    check_allowed(db, "login-ip", client_ip, LOGIN_IP_LIMIT, LOGIN_WINDOW)
+
     user = db.scalar(
         select(User).options(selectinload(User.memberships)).where(func.lower(User.email) == email).limit(1)
     )
     if user is None or not user.is_active or not verify_password(payload.password, user.password_hash):
+        record_attempt(db, "login-email", login_key, LOGIN_EMAIL_LIMIT, LOGIN_WINDOW)
+        record_attempt(db, "login-ip", client_ip, LOGIN_IP_LIMIT, LOGIN_WINDOW)
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
 
+    clear_failures(db, "login-email", login_key)
     refresh_token, csrf_token = _create_session(db, user.id)
     db.commit()
     _set_session_cookies(response, refresh_token, csrf_token)
@@ -172,9 +194,7 @@ def refresh(request: Request, response: Response, db: Session = Depends(get_db))
     refresh_token_new, csrf_token_new = _create_session(db, user.id)
     db.commit()
     _set_session_cookies(response, refresh_token_new, csrf_token_new)
-    return RefreshResponse(
-        access_token=create_access_token(user.id), user=_build_user_response(user)
-    )
+    return RefreshResponse(access_token=create_access_token(user.id), user=_build_user_response(user))
 
 
 @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
