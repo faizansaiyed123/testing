@@ -25,6 +25,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const { user, loading, signOut } = useAuth();
 
+  useEffect(() => {
+    if (!loading && !user) router.replace("/login");
+  }, [loading, router, user]);
+
   if (loading) {
     return (
       <div className="boot-screen">
@@ -33,10 +37,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </div>
     );
   }
-
-  useEffect(() => {
-    if (!loading && !user) router.replace("/login");
-  }, [loading, router, user]);
 
   if (!user) {
     return (
