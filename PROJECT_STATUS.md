@@ -56,11 +56,14 @@ Their branch implementations remain useful as historical/reference material, but
 **Phase 3 — workflow depth and data operations**
 
 Next:
-1. Transaction-safe CSV import on a fresh migration lineage.
-2. Saved views and advanced search.
+1. Saved views and advanced search.
 3. Relationship health and explainable prioritization improvements.
 4. Frontend foundation with real API integration.
 5. End-to-end, accessibility, security, performance, and final repository audit.
+
+## CSV import — merged
+
+The transaction-safe contact CSV import is now merged into `main` as PR #7 (`6d932508a89079c5a42bcd58e0096d236d620945`). It stages normalized rows, provides row-level validation, blocks duplicates, supports dry-run/revalidation, commits atomically, and records an auditable import-job completion event. The authoritative CI gate passed PostgreSQL migration and integration testing before merge.
 
 ## CSV import target
 
@@ -82,3 +85,4 @@ Import must be transaction-safe and operationally useful:
 Before resuming after interruption, inspect Git refs, PR state, commits, migrations, tests, and the existing implementation. Do not recreate completed work or rewrite useful history.
 
 Never mark a feature verified unless its relevant code path and tests have actually been exercised.
+
