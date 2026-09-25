@@ -6,7 +6,6 @@ from app.models.business_rule import BusinessRule
 from app.models.company import Company
 from app.models.contact import Contact
 from app.models.imports import ImportJob, ImportRow
-from app.models.opportunity import Opportunity
 from app.models.merge_operation import MergeOperation
 from app.models.opportunity import Opportunity
 from app.models.organization import Organization
