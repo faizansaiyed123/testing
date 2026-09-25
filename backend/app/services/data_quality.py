@@ -5,7 +5,12 @@ from sqlalchemy import and_, func, or_, select
 from sqlalchemy.orm import Session, aliased
 
 from app.models import Activity, Company, Contact, Opportunity, Task
-from app.schemas.standout import DuplicateCandidate, DataQualityResponse, DataQualitySummary, QualityIssue
+from app.schemas.standout import (
+    DataQualityResponse,
+    DataQualitySummary,
+    DuplicateCandidate,
+    QualityIssue,
+)
 from app.services.business_rules import get_rule_value
 
 
