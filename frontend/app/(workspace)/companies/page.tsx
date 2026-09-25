@@ -13,15 +13,17 @@ export default function CompaniesPage() {
   const prefix = organizationId ? `/organizations/${organizationId}` : "";
   const queryClient = useQueryClient();
   const [query, setQuery] = useState("");
+  const [page, setPage] = useState(1);
+  const pageSize = 25;
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState("");
 
   const companies = useQuery({
-    queryKey: ["companies", organizationId, query],
+    queryKey: ["companies", organizationId, query, page],
     enabled,
     queryFn: () =>
       apiFetch<CompanyList>(
-        `${prefix}/companies?page_size=100${query ? `&q=${encodeURIComponent(query)}` : ""}`,
+        `${prefix}/companies?page=${page}&page_size=${pageSize}${query ? `&q=${encodeURIComponent(query)}` : ""}`,
         {},
         accessToken,
       ),
@@ -52,7 +54,7 @@ export default function CompaniesPage() {
           aria-label="Search companies"
           placeholder="Search company name, website, phone…"
           value={query}
-          onChange={(event) => setQuery(event.target.value)}
+          onChange={(event) => { setQuery(event.target.value); setPage(1); }}
         />
         <span className="toolbar-meta">{companies.data?.total ?? 0} companies</span>
       </div>
@@ -79,6 +81,15 @@ export default function CompaniesPage() {
           <div className="panel-empty">Loading companies…</div>
         )}
       </section>
+      {companies.data && companies.data.total > pageSize ? (
+        <div className="pagination" aria-label="Companies pagination">
+          <span>Page {companies.data.page} of {Math.ceil(companies.data.total / companies.data.page_size)}</span>
+          <div>
+            <Button variant="secondary" disabled={page <= 1 || companies.isFetching} onClick={() => setPage((value) => Math.max(1, value - 1))}>Previous</Button>
+            <Button variant="secondary" disabled={page >= Math.ceil(companies.data.total / companies.data.page_size) || companies.isFetching} onClick={() => setPage((value) => value + 1)}>Next</Button>
+          </div>
+        </div>
+      ) : null}
       {creating ? <CreateCompany onClose={() => setCreating(false)} onCreate={(input) => create.mutate(input)} busy={create.isPending} error={error} /> : null}
     </div>
   );
