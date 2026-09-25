@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import UTC, datetime
 from uuid import UUID
 
 from sqlalchemy.orm import Session
@@ -29,7 +29,7 @@ def record_audit(
         summary=summary,
         before_data=before_data,
         after_data=after_data,
-        created_at=datetime.utcnow(),
+        created_at=datetime.now(UTC),
     )
     db.add(event)
     return event
