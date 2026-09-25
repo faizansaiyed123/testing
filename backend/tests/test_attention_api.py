@@ -42,17 +42,21 @@ def _identity(db_session):
 )
 def test_attention_queue_explains_overdue_and_stale_signals(client, db_session) -> None:
     organization, user = _identity(db_session)
-    stage = PipelineStage(organization=organization, name="New", order_index=10)
+    stage = PipelineStage(
+        organization_id=organization.id,
+        name="New",
+        order_index=10,
+    )
     old_opportunity = Opportunity(
         organization_id=organization.id,
         owner_user_id=user.id,
-        stage=stage,
+        stage_id=stage.id,
         name="Renewal Deal",
         status="open",
         expected_close_date=(datetime.now(UTC) - timedelta(days=2)).date(),
     )
     contact = Contact(
-        organization=organization,
+        organization_id=organization.id,
         owner_user_id=user.id,
         first_name="Ada",
         last_name="Lovelace",
