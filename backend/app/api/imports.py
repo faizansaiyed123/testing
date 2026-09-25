@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.auth.authorization import require_roles
 from app.db.session import get_db
-from app.models import ImportJob, Membership, MembershipRole
+from app.models import Membership, MembershipRole
 from app.schemas.imports import (
     ImportCommitRequest,
     ImportCommitResponse,
