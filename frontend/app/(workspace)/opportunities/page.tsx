@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useState } from "react";
+import * as React from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/app/providers";
 import { apiFetch } from "@/lib/api";
@@ -98,8 +99,12 @@ function CreateOpportunity({
 }) {
   const [name, setName] = useState("");
   const [amount, setAmount] = useState("");
-  const [stageId, setStageId] = useState(stages[0]?.id ?? "");
+  const [stageId, setStageId] = useState("");
   const [expectedCloseDate, setExpectedCloseDate] = useState("");
+
+  React.useEffect(() => {
+    if (!stageId && stages[0]?.id) setStageId(stages[0].id);
+  }, [stageId, stages]);
 
   function submit(event: FormEvent) {
     event.preventDefault();
