@@ -150,6 +150,7 @@ function CreateView({ canShare, onClose, onCreate, busy, error }: {
   const [lifecycle, setLifecycle] = useState("prospect");
   const [hasEmail, setHasEmail] = useState(true);
   const [shared, setShared] = useState(false);
+  const [sort, setSort] = useState<SavedView["definition"]["sort"]>("name_asc");
 
   function submit(event: FormEvent) {
     event.preventDefault();
@@ -176,6 +177,7 @@ function CreateView({ canShare, onClose, onCreate, busy, error }: {
           <label>Contains<input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Optional name/email search" /></label>
           <label>Lifecycle<select value={lifecycle} onChange={(e) => setLifecycle(e.target.value)}><option value="">Any lifecycle</option><option value="lead">lead</option><option value="prospect">prospect</option><option value="customer">customer</option><option value="churned">churned</option></select></label>
           <label className="check-row"><input type="checkbox" checked={hasEmail} onChange={(e) => setHasEmail(e.target.checked)} />Only contacts with email</label>
+          <label>Sort<select value={sort} onChange={(e) => setSort(e.target.value as SavedView["definition"]["sort"])}><option value="updated_desc">Recently updated</option><option value="updated_asc">Least recently updated</option><option value="name_asc">Name A–Z</option><option value="name_desc">Name Z–A</option></select></label>
           {canShare ? <label className="check-row"><input type="checkbox" checked={shared} onChange={(e) => setShared(e.target.checked)} />Share with the workspace</label> : null}
           {error ? <div className="form-error" role="alert">{error}</div> : null}
           <Button type="submit" disabled={busy}>{busy ? "Saving…" : "Save view"}</Button>
@@ -203,7 +205,7 @@ function EditView({
 }) {
   const [name, setName] = useState(view.name);
   const [query, setQuery] = useState(view.definition.query ?? "");
-  const [lifecycle, setLifecycle] = useState(view.definition.lifecycle[0] ?? "");
+  const [lifecycle, setLifecycle] = useState<SavedView["definition"]["lifecycle"][number] | "">(view.definition.lifecycle[0] ?? "");
   const [hasEmail, setHasEmail] = useState(view.definition.has_email ?? true);
   const [shared, setShared] = useState(view.shared);
   const [sort, setSort] = useState(view.definition.sort);
