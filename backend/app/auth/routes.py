@@ -20,7 +20,13 @@ from app.auth.rate_limit import (
     clear_failures,
     record_failure,
 )
-from app.auth.schemas import AuthResponse, LoginRequest, RefreshResponse, SignupRequest, UserResponse
+from app.auth.schemas import (
+    AuthResponse,
+    LoginRequest,
+    RefreshResponse,
+    SignupRequest,
+    UserResponse,
+)
 from app.auth.tokens import create_access_token, create_refresh_token, hash_refresh_token
 from app.core.config import get_settings
 from app.db.session import get_db
@@ -174,7 +180,7 @@ def login(
         .where(func.lower(User.email) == email)
         .limit(1)
     )
-    if user is None or not user.is_active or not verify_password(payload.password, user.password_hash):
+    if user is None or not user.is_active or not verify_password(user.password_hash, payload.password):
         record_failure(db, "login-email", login_key, LOGIN_EMAIL_LIMIT, LOGIN_WINDOW)
         record_failure(db, "login-ip", client_ip, LOGIN_IP_LIMIT, LOGIN_WINDOW)
         raise HTTPException(

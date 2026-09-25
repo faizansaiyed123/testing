@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.auth.authorization import require_membership
 from app.db.session import get_db
-from app.models import Contact, Membership
+from app.models import Membership
 from app.schemas.contact import ContactCreate, ContactListResponse, ContactResponse, ContactUpdate
 from app.services.contact import (
     archive_contact,
@@ -43,84 +43,7 @@ def create(
     except (ValueError, IntegrityError) as exc:
         db.rollback()
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST if isinstance(exc, ValueError) else 409,
+            status_code=status.HTTP_400_BAD_REQUEST if isinstance(exc, ValueError) else status.HTTP_409_CONFLICT,
             detail=str(exc),
         ) from exc
     return ContactResponse.model_validate(contact)
-
-
-@router.get("", response_model=ContactListResponse)
-def list_contacts(
-    organization_id: UUID,
-    membership: Membership = Depends(require_membership),
-    db: Session = Depends(get_db),
-    q: str | None = Query(default=None, min_length=1, max_length=100),
-    company_id: UUID | None = Query(default=None),
-    page: int = Query(default=1, ge=1),
-    page_size: int = Query(default=25, ge=1, le=100),
-) -> ContactListResponse:
-    items, total = search_contacts(
-        db,
-        organization_id=organization_id,
-        query=q,
-        company_id=company_id,
-        page=page,
-        page_size=page_size,
-    )
-    return ContactListResponse(
-        items=[ContactResponse.model_validate(item) for item in items],
-        page=page,
-        page_size=page_size,
-        total=total,
-    )
-
-
-@router.get("/{contact_id}", response_model=ContactResponse)
-def get(
-    organization_id: UUID,
-    contact_id: UUID,
-    membership: Membership = Depends(require_membership),
-    db: Session = Depends(get_db),
-) -> ContactResponse:
-    contact = get_contact(db, organization_id=organization_id, contact_id=contact_id)
-    if contact is None:
-        raise HTTPException(status_code=404, detail="Contact not found")
-    return ContactResponse.model_validate(contact)
-
-
-@router.patch("/{contact_id}", response_model=ContactResponse)
-def update(
-    organization_id: UUID,
-    contact_id: UUID,
-    payload: ContactUpdate,
-    membership: Membership = Depends(require_membership),
-    db: Session = Depends(get_db),
-) -> ContactResponse:
-    contact = get_contact(db, organization_id=organization_id, contact_id=contact_id)
-    if contact is None:
-        raise HTTPException(status_code=404, detail="Contact not found")
-    changes = payload.model_dump(exclude_unset=True)
-    if not changes:
-        return ContactResponse.model_validate(contact)
-    try:
-        update_contact(db, contact=contact, actor_user_id=membership.user_id, changes=changes)
-        db.commit()
-    except ValueError as exc:
-        db.rollback()
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
-    return ContactResponse.model_validate(contact)
-
-
-@router.delete("/{contact_id}", status_code=status.HTTP_204_NO_CONTENT)
-def archive(
-    organization_id: UUID,
-    contact_id: UUID,
-    membership: Membership = Depends(require_membership),
-    db: Session = Depends(get_db),
-) -> Response:
-    contact = get_contact(db, organization_id=organization_id, contact_id=contact_id)
-    if contact is None:
-        raise HTTPException(status_code=404, detail="Contact not found")
-    archive_contact(db, contact=contact, actor_user_id=membership.user_id)
-    db.commit()
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
