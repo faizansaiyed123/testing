@@ -1,6 +1,9 @@
+from typing import Literal
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
+
+ContactLifecycle = Literal["lead", "prospect", "customer", "churned"]
 
 
 class ContactCreate(BaseModel):
@@ -9,7 +12,7 @@ class ContactCreate(BaseModel):
     email: EmailStr | None = None
     phone: str | None = Field(default=None, max_length=40)
     job_title: str | None = Field(default=None, max_length=160)
-    lifecycle: str = Field(default="lead", min_length=4, max_length=32)
+    lifecycle: ContactLifecycle = "lead"
     company_id: UUID | None = None
 
     @field_validator("first_name", "last_name", "job_title")
@@ -42,7 +45,7 @@ class ContactUpdate(BaseModel):
     email: EmailStr | None = None
     phone: str | None = Field(default=None, max_length=40)
     job_title: str | None = Field(default=None, max_length=160)
-    lifecycle: str | None = Field(default=None, min_length=4, max_length=32)
+    lifecycle: ContactLifecycle | None = None
     company_id: UUID | None = None
 
     @field_validator("first_name", "last_name", "job_title")
