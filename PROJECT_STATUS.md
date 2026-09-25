@@ -65,6 +65,10 @@ Next:
 
 The transaction-safe contact CSV import is now merged into `main` as PR #7 (`6d932508a89079c5a42bcd58e0096d236d620945`). It stages normalized rows, provides row-level validation, blocks duplicates, supports dry-run/revalidation, commits atomically, and records an auditable import-job completion event. The authoritative CI gate passed PostgreSQL migration and integration testing before merge.
 
+## Saved views — merged
+
+Tenant-scoped saved contact views are now merged into `main` as PR #8 (`940d5061542918e76c9d74857a999133dd55cfae`). Views support validated filters, private/shared visibility, execution against the real contacts query, definition versioning, and audit events. The authoritative CI gate passed PostgreSQL migration `0011_saved_views` and the full integration suite before merge.
+
 ## CSV import target
 
 Import must be transaction-safe and operationally useful:
