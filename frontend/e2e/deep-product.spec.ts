@@ -148,3 +148,122 @@ test("workspace stays within mobile viewport bounds", async ({ page }) => {
   }));
   expect(contactsWidths.document).toBeLessThanOrEqual(contactsWidths.viewport);
 });
+
+
+test("client coalesces concurrent expired-session refreshes", async ({ page }) => {
+  let refreshCount = 0;
+  let contact401s = 0;
+  let company401s = 0;
+
+  const user = {
+    id: "11111111-1111-1111-1111-111111111111",
+    email: "refresh@fieldline.test",
+    full_name: "Refresh User",
+    is_active: true,
+    memberships: [{ organization_id: "22222222-2222-2222-2222-222222222222", role: "owner" }],
+  };
+  const base = "/api/v1/organizations/22222222-2222-2222-2222-222222222222";
+
+  await page.route("**/api/v1/auth/refresh", async (route) => {
+    refreshCount += 1;
+    if (refreshCount > 1) await new Promise((resolve) => setTimeout(resolve, 150));
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ access_token: `token-${refreshCount}`, token_type: "bearer", user }),
+    });
+  });
+
+  await page.route(`**${base}/contacts**`, async (route) => {
+    if (contact401s++ === 0) {
+      await route.fulfill({ status: 401, contentType: "application/json", body: JSON.stringify({ detail: "expired" }) });
+      return;
+    }
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ items: [], page: 1, page_size: 25, total: 0 }),
+    });
+  });
+
+  await page.route(`**${base}/companies**`, async (route) => {
+    if (company401s++ === 0) {
+      await route.fulfill({ status: 401, contentType: "application/json", body: JSON.stringify({ detail: "expired" }) });
+      return;
+    }
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ items: [], page: 1, page_size: 25, total: 0 }),
+    });
+  });
+
+  await page.route(`**${base}/opportunities**`, async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ items: [], page: 1, page_size: 25, total: 0 }),
+    });
+  });
+  await page.route(`**${base}/attention`, async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ items: [], generated_at: new Date().toISOString() }),
+    });
+  });
+
+  await page.goto("/dashboard");
+  await expect(page.getByRole("heading", { name: "Good morning. Here is the signal." })).toBeVisible();
+  await expect(page.locator(".stat-card").filter({ hasText: "Contacts" }).locator("strong")).toHaveText("0");
+  await expect(page.locator(".stat-card").filter({ hasText: "Companies" }).locator("strong")).toHaveText("0");
+  expect(refreshCount).toBe(2);
+});
+
+test("dashboard surfaces a retryable data failure instead of a false zero state", async ({ page }) => {
+  const user = {
+    id: "11111111-1111-1111-1111-111111111111",
+    email: "retry@fieldline.test",
+    full_name: "Retry User",
+    is_active: true,
+    memberships: [{ organization_id: "22222222-2222-2222-2222-222222222222", role: "owner" }],
+  };
+  const base = "/api/v1/organizations/22222222-2222-2222-2222-222222222222";
+  let shouldFail = true;
+
+  await page.route("**/api/v1/auth/refresh", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ access_token: "retry-token", token_type: "bearer", user }),
+    });
+  });
+  await page.route(`**${base}/contacts**`, async (route) => {
+    if (shouldFail) {
+      await route.fulfill({ status: 503, contentType: "application/json", body: JSON.stringify({ detail: "Contacts service unavailable" }) });
+      return;
+    }
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ items: [], page: 1, page_size: 1, total: 4 }),
+    });
+  });
+  await page.route(`**${base}/companies**`, async (route) => {
+    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ items: [], page: 1, page_size: 1, total: 2 }) });
+  });
+  await page.route(`**${base}/opportunities**`, async (route) => {
+    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ items: [], page: 1, page_size: 1, total: 3 }) });
+  });
+  await page.route(`**${base}/attention`, async (route) => {
+    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ items: [], generated_at: new Date().toISOString() }) });
+  });
+
+  await page.goto("/dashboard");
+  await expect(page.getByRole("alert").filter({ hasText: "could not be refreshed" })).toBeVisible();
+
+  shouldFail = false;
+  await page.getByRole("button", { name: "Try again" }).click();
+  await expect(page.getByRole("alert").filter({ hasText: "could not be refreshed" })).toHaveCount(0);
+  await expect(page.locator(".stat-card").filter({ hasText: "Contacts" }).locator("strong")).toHaveText("4");
+});
