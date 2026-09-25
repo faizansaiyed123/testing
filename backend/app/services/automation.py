@@ -99,9 +99,10 @@ def run_opportunity_automations(
                 status="running",
             )
             .on_conflict_do_nothing(index_elements=["rule_id", "event_key"])
+            .returning(AutomationRun.id)
         )
-        result = db.execute(run_insert)
-        if result.rowcount != 1:
+        run_id = db.execute(run_insert).scalar_one_or_none()
+        if run_id is None:
             continue
 
         config = dict(rule.action_config)
@@ -127,8 +128,7 @@ def run_opportunity_automations(
 
         run = db.scalar(
             select(AutomationRun)
-            .where(AutomationRun.rule_id == rule.id)
-            .where(AutomationRun.event_key == event_key)
+            .where(AutomationRun.id == run_id)
             .with_for_update()
         )
         if run is None:
