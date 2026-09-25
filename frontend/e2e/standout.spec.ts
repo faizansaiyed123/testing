@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import type { Page } from "@playwright/test";
 
 const user = {
   id: "11111111-1111-1111-1111-111111111111",
@@ -8,7 +9,7 @@ const user = {
   memberships: [{ organization_id: "22222222-2222-2222-2222-222222222222", role: "owner" }],
 };
 
-async function seedSession(page: Parameters<typeof test>[0]["page"]) {
+async function seedSession(page: Page) {
   const organizationId = user.memberships[0].organization_id;
   await page.route("**/api/v1/auth/refresh", async (route) => {
     await route.fulfill({
