@@ -5,7 +5,7 @@ import * as React from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/app/providers";
 import { apiFetch } from "@/lib/api";
-import type { Opportunity, OpportunityList } from "@/lib/types";
+import type { Opportunity, OpportunityList, StuckOpportunityResponse } from "@/lib/types";
 import { Badge, Button, SectionTitle, StatCard } from "@/components/ui";
 
 type Stage = { id: string; name: string; order_index: number; win_probability: string | number; is_closed: boolean; is_won: boolean };
@@ -25,7 +25,12 @@ export default function OpportunitiesPage() {
   const stages = useQuery({
     queryKey: ["pipeline-stages", organizationId],
     enabled,
-    queryFn: () => apiFetch<Stage[]>(`${prefix}/pipeline/stages`, {}, accessToken),
+    queryFn: () => apiFetch<Stage[]>(prefix + "/pipeline/stages", {}, accessToken),
+  });
+  const stuck = useQuery({
+    queryKey: ["pipeline-stuck", organizationId],
+    enabled,
+    queryFn: () => apiFetch<StuckOpportunityResponse>(prefix + "/pipeline/stuck?limit=10", {}, accessToken),
   });
 
   const create = useMutation({
@@ -55,6 +60,23 @@ export default function OpportunitiesPage() {
         <StatCard label="Won" value={won} detail="closed won" accent="green" />
         <StatCard label="Lost" value={lost} detail="closed lost" accent="amber" />
       </div>
+      <section className="panel stuck-panel">
+        <div className="panel-head">
+          <div><span className="eyebrow">Pipeline intelligence</span><h2>Opportunities that look stuck</h2><p>Threshold: {stuck.data?.configured_threshold_days ?? "—"} days in stage.</p></div>
+          <Badge tone="warning">{stuck.data?.items.length ?? 0} flagged</Badge>
+        </div>
+        {stuck.data?.items.length ? (
+          <div className="stuck-list">
+            {stuck.data.items.map((item) => (
+              <article key={item.id} className="stuck-item">
+                <div className="stuck-age"><strong>{item.stage_age_days}</strong><span>days in {item.stage_name}</span></div>
+                <div className="stuck-copy"><strong>{item.name}</strong><p>{item.reasons.join(" · ")}</p><small>Recommended: {item.recommended_action}</small></div>
+                <Badge tone={item.has_next_action ? "info" : "danger"}>{item.has_next_action ? "Next action set" : "No next action"}</Badge>
+              </article>
+            ))}
+          </div>
+        ) : !stuck.isLoading ? <div className="panel-empty">No stuck opportunities detected under the current rules.</div> : <div className="panel-empty">Checking stage age and next actions…</div>}
+      </section>
       <div className="panel table-panel">
         <table className="data-table">
           <thead><tr><th>Opportunity</th><th>Amount</th><th>Status</th><th>Close date</th></tr></thead>
