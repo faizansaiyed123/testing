@@ -91,22 +91,22 @@ def calculate_relationship_health(
 
     score = max(0, min(100, recency + engagement + commercial - task_penalty + 20))
     evidence = [
-        HealthEvidence(code=recency_code, impact=recency, description=recency_description),
-        HealthEvidence(
-            code="engagement_30d",
-            impact=engagement,
-            description=f"{activity_count_30d} activity event(s) recorded in the last 30 days",
-        ),
-        HealthEvidence(
-            code="open_opportunities",
-            impact=commercial,
-            description=f"{open_opportunity_count} open opportunity/opportunities linked",
-        ),
-        HealthEvidence(
-            code="overdue_tasks",
-            impact=-task_penalty,
-            description=f"{overdue_task_count} overdue incomplete task(s) linked",
-        ),
+        {"code": recency_code, "impact": recency, "description": recency_description},
+        {
+            "code": "engagement_30d",
+            "impact": engagement,
+            "description": f"{activity_count_30d} activity event(s) recorded in the last 30 days",
+        },
+        {
+            "code": "open_opportunities",
+            "impact": commercial,
+            "description": f"{open_opportunity_count} open opportunity/opportunities linked",
+        },
+        {
+            "code": "overdue_tasks",
+            "impact": -task_penalty,
+            "description": f"{overdue_task_count} overdue incomplete task(s) linked",
+        },
     ]
 
     return {
