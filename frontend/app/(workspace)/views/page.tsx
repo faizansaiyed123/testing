@@ -232,7 +232,7 @@ function EditView({
         <form className="stack-form" onSubmit={submit}>
           <label>Name<input value={name} onChange={(event) => setName(event.target.value)} required /></label>
           <label>Contains<input value={query} onChange={(event) => setQuery(event.target.value)} /></label>
-          <label>Lifecycle<select value={lifecycle} onChange={(event) => setLifecycle(event.target.value)}><option value="">Any lifecycle</option><option value="lead">lead</option><option value="prospect">prospect</option><option value="customer">customer</option><option value="churned">churned</option></select></label>
+          <label>Lifecycle<select value={lifecycle} onChange={(event) => setLifecycle(event.target.value as SavedView["definition"]["lifecycle"][number] | "")}><option value="">Any lifecycle</option><option value="lead">lead</option><option value="prospect">prospect</option><option value="customer">customer</option><option value="churned">churned</option></select></label>
           <label className="check-row"><input type="checkbox" checked={hasEmail} onChange={(event) => setHasEmail(event.target.checked)} />Only contacts with email</label>
           <label>Sort<select value={sort} onChange={(event) => setSort(event.target.value as SavedView["definition"]["sort"])}><option value="updated_desc">Recently updated</option><option value="updated_asc">Least recently updated</option><option value="name_asc">Name A–Z</option><option value="name_desc">Name Z–A</option></select></label>
           {canShare ? <label className="check-row"><input type="checkbox" checked={shared} onChange={(event) => setShared(event.target.checked)} />Share with the workspace</label> : null}
