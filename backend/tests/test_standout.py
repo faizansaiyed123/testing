@@ -2,7 +2,6 @@ from datetime import UTC, datetime, timedelta
 from importlib.util import find_spec
 
 import pytest
-from sqlalchemy import func, select
 
 from app.auth.crypto import hash_password
 from app.auth.tokens import create_access_token
