@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 
+from app.api.companies import router as companies_router
 from app.api.health import router as health_router
 from app.api.organizations import router as organizations_router
 from app.auth.routes import router as auth_router
@@ -18,6 +19,7 @@ app = FastAPI(
 app.include_router(health_router, prefix=settings.api_prefix)
 app.include_router(auth_router, prefix=settings.api_prefix)
 app.include_router(organizations_router, prefix=settings.api_prefix)
+app.include_router(companies_router, prefix=settings.api_prefix)
 
 
 @app.get("/", include_in_schema=False)
