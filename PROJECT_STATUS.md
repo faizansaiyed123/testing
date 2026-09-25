@@ -2,79 +2,66 @@
 
 **Product:** Fieldline CRM  
 **Repository:** `faizansaiyed123/testing`  
-**Working branch:** `feature/crm-core`  
+**Working branch:** `feature/attention-queue`  
 **Stable branch:** `main`  
 **Status date:** 2026-09-25
 
-## Verified locally
+## Backend slices completed
 
-- GitHub connection is active with push/admin access.
-- `main` remains the stable branch; risky CRM database work is isolated in `feature/crm-core`.
-- Product foundation, roadmap, architecture, and decision records are documented.
-- Backend FastAPI scaffold, PostgreSQL/SQLAlchemy configuration, and Alembic migrations are implemented.
-- Identity schema is implemented: organizations, users, memberships, roles, uniqueness, and indexes.
-- Authentication is implemented: Argon2 password hashing, signed short-lived access tokens, opaque refresh sessions, refresh rotation, CSRF checks, secure-cookie production validation, and authenticated `/me`.
-- Tenant authorization dependencies and role checks are implemented.
-- Authentication abuse controls use database-backed rate-limit buckets with HMAC fingerprints.
-- CRM core schema is implemented: companies, contacts, pipeline stages, opportunities, activities, tasks, and audit events.
-- Company and contact CRUD/search/archive workflows are implemented with tenant scoping and audit recording.
-- Pipeline/opportunity workflows are implemented with stage-driven win/loss state and cross-tenant relationship validation.
-- Customer 360 timeline is implemented as a bounded SQL `UNION ALL` query with cursor pagination and tenant isolation.
-- HTTP hardening is implemented: request IDs, safe error responses, security headers, auth cache prevention, and database readiness.
-- Default sales pipeline stages are created during organization signup.
-- Local non-PostgreSQL tests and Python compilation have been exercised during development; individual failures were diagnosed and corrected.
+- FastAPI backend scaffold with versioned API routing.
+- PostgreSQL/SQLAlchemy configuration and Alembic migrations.
+- Organization, user, membership, and role identity model.
+- Argon2 password hashing.
+- Short-lived signed access JWTs with issuer/audience/type/expiry validation.
+- Opaque refresh-token sessions with server-side hashes, rotation, locking, CSRF binding, and secure-cookie production checks.
+- Tenant membership and reusable role authorization dependencies.
+- Database-backed authentication throttling using HMAC fingerprints.
+- CRM core schema: companies, contacts, pipeline stages, opportunities, activities, tasks, and audit events.
+- Tenant-scoped audited CRUD/search/archive workflows for companies and contacts.
+- Stage-driven opportunity state with cross-tenant relationship validation.
+- Customer 360 timeline using SQL `UNION ALL` and cursor pagination.
+- HTTP request IDs, safe internal-error responses, security headers, auth cache prevention, and database readiness probe.
+- Default sales pipeline stages on organization signup.
+- Explainable attention queue for overdue tasks, overdue open opportunities, stale open opportunities, and stale lead/prospect contacts.
 
-## Current verification state
+## Current branch state
 
-PR #1 contains the CRM-core work and is intended to merge with normal history preservation rather than squashing it.
+`feature/crm-core` remains the CRM foundation branch and PR #1 remains open/unstable; live PostgreSQL CI is the merge gate.
 
-The exact current branch head is undergoing GitHub Actions verification. Live PostgreSQL migration/integration verification is **not yet marked passed** until the current-head run completes successfully.
+`feature/attention-queue` is branched from the current CRM head and PR #4 is open for the attention queue. Its current head is under GitHub Actions verification.
 
-An earlier current-head CI failure was traced to ORM response serialization in `UserResponse`; that defect is fixed and pushed in commit `209705218ba668dfff3e092e2b6d37d82ffc312c`.
+## Attention queue contract
 
-## Current phase
+The queue is deliberately deterministic and evidence-based; it is not presented as AI.
 
-**Phase 2 — CRM core backend**
+Priority signals:
+- 95: overdue incomplete task.
+- 90: open opportunity past expected close date.
+- 65: open opportunity with no recent activity for 21+ days.
+- 70: lead/prospect with no recent activity for 14+ days.
 
-Completed slices:
-1. product foundation and engineering rules
-2. FastAPI backend scaffold
-3. PostgreSQL/SQLAlchemy + Alembic infrastructure
-4. organization/user identity model
-5. password authentication and token/session lifecycle
-6. tenant authorization and role checks
-7. authentication rate limiting
-8. CI baseline and package-discovery repair
-9. CRM core relational schema
-10. activity/task/audit history
-11. audited company workflow
-12. audited contact workflow
-13. pipeline and opportunity workflow
-14. Customer 360 timeline
-15. HTTP hardening and readiness checks
+Every item includes the entity type/id, priority, human-readable reason, due timestamp when applicable, and last recorded activity timestamp. Results are tenant-scoped and bounded to a maximum of 100 items.
 
-Next after the branch passes its quality gate:
-1. merge CRM core into `main`
-2. duplicate detection + safe merge
-3. explainable attention/follow-up queue
-4. deterministic workflow automation
-5. transaction-safe CSV import
-6. saved views / advanced search / relationship health
-7. frontend foundation and real API integration
-8. end-to-end, accessibility, security, performance, and final audit
+## Verification state
 
-## Environment limitations
+GitHub Actions has already demonstrated that the backend can install successfully, start PostgreSQL 18, compile, and apply the CRM migration chain through `0007_timeline_indexes`.
 
-The execution container currently has no Docker/PostgreSQL client and does not have the `psycopg` or Ruff packages installed. Package installation from the external package index is blocked by the execution environment's network configuration.
+Attention branch migration `0008_attention_indexes` is present and will be validated by the current PR run.
 
-Therefore this environment cannot truthfully mark live PostgreSQL connectivity, live migration execution, Ruff execution, or the full GitHub Actions gate as passed. GitHub Actions is configured as the authoritative live database quality gate using PostgreSQL 18.
+The local execution container lacks Docker/PostgreSQL client tooling and external package installation is unavailable, so local live-DB/Ruff verification is not claimed.
+
+## Next engineering slices
+
+1. Finish and merge the attention queue after its exact-head CI passes.
+2. Resolve/merge the CRM-core PR without rewriting useful history.
+3. Deterministic workflow automation with idempotency and audit trails.
+4. Transaction-safe CSV import with validation, dry-run, rollback, and row-level error reporting.
+5. Saved views, advanced search, and explainable relationship health.
+6. Frontend foundation and real API integration.
+7. Full end-to-end, accessibility, security, performance, and final repository audit.
 
 ## Recovery rule
 
-Before resuming after interruption, inspect Git refs, commits, project state, migrations, tests, and the existing implementation. Never recreate completed work or rewrite useful history.
+Before resuming after interruption, inspect Git refs, PR state, commits, migrations, tests, and existing implementation. Do not recreate completed work or rewrite useful history.
 
-## Product principles
-
-Fieldline is a workflow-first CRM for small teams. The system should answer “what needs attention today?”, keep prioritization explainable, protect tenant boundaries, preserve relationship history, and make automation deterministic and auditable.
-
-Never mark a feature “verified” unless its relevant code path and tests have actually been exercised.
+Never mark a feature verified unless its relevant code path and tests have actually been exercised.
