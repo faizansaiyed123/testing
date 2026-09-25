@@ -1,6 +1,7 @@
 from importlib.util import find_spec
 
 import pytest
+
 from app.auth.crypto import hash_password
 from app.auth.tokens import create_access_token
 from app.db.base import Base
