@@ -83,3 +83,21 @@ def test_refresh_rotates_session_and_requires_csrf(client) -> None:
         headers={"X-CSRF-Token": old_csrf},
     )
     assert reused.status_code == 401
+
+
+@pytest.mark.skipif(
+    not POSTGRES_DRIVER_AVAILABLE,
+    reason="PostgreSQL driver is required for integration tests",
+)
+def test_successful_signup_does_not_consume_ip_failure_quota(client) -> None:
+    for suffix in range(5):
+        response = client.post(
+            "/api/v1/auth/signup",
+            json={
+                "organization_name": f"Quota Org {suffix}",
+                "full_name": "Quota User",
+                "email": f"quota-{suffix}@example.com",
+                "password": "Correct Horse Battery Staple",
+            },
+        )
+        assert response.status_code == 201
