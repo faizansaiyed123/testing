@@ -1,5 +1,4 @@
 from importlib.util import find_spec
-from decimal import Decimal
 
 import pytest
 
@@ -69,6 +68,24 @@ def test_opportunity_workflow(client, db_session) -> None:
     updated = client.patch(
         f"{base}/{opportunity_id}",
         json={"status": "lost", "lost_reason": "Budget deferred"},
+        headers=headers,
+    )
+    assert updated.status_code == 400
+
+    closed_stage = PipelineStage(
+        organization_id=organization.id,
+        name="Closed Lost",
+        order_index=60,
+        win_probability=0,
+        is_closed=True,
+        is_won=False,
+    )
+    db_session.add(closed_stage)
+    db_session.flush()
+
+    updated = client.patch(
+        f"{base}/{opportunity_id}",
+        json={"stage_id": str(closed_stage.id), "lost_reason": "Budget deferred"},
         headers=headers,
     )
     assert updated.status_code == 200

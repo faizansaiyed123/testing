@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.auth.authorization import require_membership
 from app.db.session import get_db
-from app.models import Membership, Opportunity
+from app.models import Membership
 from app.schemas.opportunity import (
     OpportunityCreate,
     OpportunityListResponse,
@@ -46,7 +46,11 @@ def create(
         db.commit()
     except (ValueError, IntegrityError) as exc:
         db.rollback()
-        code = status.HTTP_400_BAD_REQUEST if isinstance(exc, ValueError) else status.HTTP_409_CONFLICT
+        code = (
+            status.HTTP_400_BAD_REQUEST
+            if isinstance(exc, ValueError)
+            else status.HTTP_409_CONFLICT
+        )
         raise HTTPException(status_code=code, detail=str(exc)) from exc
     return OpportunityResponse.model_validate(opportunity)
 
@@ -92,7 +96,7 @@ def get(
         opportunity_id=opportunity_id,
     )
     if opportunity is None:
-        raise HTTPException(status_code=404, detail="Opportunity not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Opportunity not found")
     return OpportunityResponse.model_validate(opportunity)
 
 
@@ -110,7 +114,7 @@ def update(
         opportunity_id=opportunity_id,
     )
     if opportunity is None:
-        raise HTTPException(status_code=404, detail="Opportunity not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Opportunity not found")
     try:
         changes = payload.model_dump(exclude_unset=True)
         update_opportunity(
@@ -122,7 +126,7 @@ def update(
         db.commit()
     except ValueError as exc:
         db.rollback()
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
     return OpportunityResponse.model_validate(opportunity)
 
 
@@ -139,7 +143,7 @@ def archive(
         opportunity_id=opportunity_id,
     )
     if opportunity is None:
-        raise HTTPException(status_code=404, detail="Opportunity not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Opportunity not found")
     archive_opportunity(
         db,
         opportunity=opportunity,
