@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.models import Company, Contact, Opportunity, PipelineStage
 from app.services.audit import record_audit
+from app.services.automation import run_opportunity_automations
 from app.services.pipeline import get_stage
 
 
@@ -179,6 +180,7 @@ def update_opportunity(
         raise ValueError("Contact belongs to a different company")
 
     before = _snapshot(opportunity)
+    previous_status = opportunity.status
     for key, value in changes.items():
         setattr(opportunity, key, value)
 
@@ -195,6 +197,12 @@ def update_opportunity(
         opportunity.lost_reason = None
 
     db.flush()
+    run_opportunity_automations(
+        db,
+        opportunity=opportunity,
+        previous_status=previous_status,
+        actor_user_id=actor_user_id,
+    )
     record_audit(
         db,
         organization_id=opportunity.organization_id,
