@@ -189,7 +189,7 @@ test("contact inspection is keyboard reachable", async ({ page }) => {
       }),
     });
   });
-  await page.route("**/api/v1/organizations/" + organizationId + "/contacts/33333333-33333333-3333-333333333333/relationship-health", async (route) => {
+  await page.route("**/api/v1/organizations/" + organizationId + "/contacts/33333333-3333-3333-3333-333333333333/relationship-health", async (route) => {
     await route.fulfill({
       status: 200,
       contentType: "application/json",
