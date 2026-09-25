@@ -1,5 +1,5 @@
 from app.db.base import Base
-from app.models import AuthSession, Membership, MembershipRole, Organization, User
+from app.models import AuthRateLimit, AuthSession, Membership, MembershipRole, Organization, User
 
 
 def test_identity_tables_are_registered() -> None:
@@ -8,6 +8,7 @@ def test_identity_tables_are_registered() -> None:
         "users",
         "organization_memberships",
         "auth_sessions",
+        "auth_rate_limits",
     }
 
 
@@ -20,9 +21,12 @@ def test_identity_constraints_exist() -> None:
     organizations = Base.metadata.tables[Organization.__tablename__]
     memberships = Base.metadata.tables[Membership.__tablename__]
     sessions = Base.metadata.tables[AuthSession.__tablename__]
+    rate_limits = Base.metadata.tables[AuthRateLimit.__tablename__]
 
     assert any(index.unique for index in users.indexes)
-    assert any(constraint.name == "uq_membership_org_user" for constraint in memberships.constraints)
+    assert any(
+        constraint.name == "uq_membership_org_user" for constraint in memberships.constraints
+    )
     assert any(
         "slug" in [column.name for column in constraint.columns]
         for constraint in organizations.constraints
@@ -30,3 +34,6 @@ def test_identity_constraints_exist() -> None:
     )
     assert any(index.name == "ix_memberships_org_role" for index in memberships.indexes)
     assert any(index.name == "ix_auth_sessions_user_active" for index in sessions.indexes)
+    assert any(
+        constraint.name == "uq_auth_rate_scope_key" for constraint in rate_limits.constraints
+    )

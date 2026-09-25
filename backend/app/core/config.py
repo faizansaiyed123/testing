@@ -26,7 +26,10 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def validate_security_settings(self) -> "Settings":
-        if self.environment == "production" and self.jwt_secret_key == "development-only-change-me-development-only":
+        if (
+            self.environment == "production"
+            and self.jwt_secret_key == "development-only-change-me-development-only"
+        ):
             raise ValueError("FIELDLINE_JWT_SECRET_KEY must be changed in production")
         if len(self.jwt_secret_key.encode("utf-8")) < 32:
             raise ValueError("FIELDLINE_JWT_SECRET_KEY must be at least 32 bytes")

@@ -1,9 +1,15 @@
-import jwt
-import pytest
 from uuid import uuid4
 
+import jwt
+import pytest
+
 from app.auth.crypto import hash_password, verify_password
-from app.auth.tokens import create_access_token, create_refresh_token, decode_access_token, hash_refresh_token
+from app.auth.tokens import (
+    create_access_token,
+    create_refresh_token,
+    decode_access_token,
+    hash_refresh_token,
+)
 from app.core.config import Settings
 
 
@@ -34,7 +40,7 @@ def test_access_token_rejects_wrong_type() -> None:
         Settings().jwt_secret_key,
         algorithm="HS256",
     )
-    with pytest.raises(Exception):
+    with pytest.raises(ValueError):
         decode_access_token(token)
 
 
@@ -47,7 +53,11 @@ def test_refresh_tokens_are_opaque_and_hashed() -> None:
 
 def test_production_requires_a_real_secret_and_secure_cookies() -> None:
     with pytest.raises(ValueError):
-        Settings(environment="production", jwt_secret_key="development-only-change-me-development-only", secure_cookies=True)
+        Settings(
+            environment="production",
+            jwt_secret_key="development-only-change-me-development-only",
+            secure_cookies=True,
+        )
     with pytest.raises(ValueError):
         Settings(environment="production", jwt_secret_key="x" * 32, secure_cookies=False)
 

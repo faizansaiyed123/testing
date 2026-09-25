@@ -21,4 +21,6 @@ class AuthRateLimit(Base):
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
     )
 
-    __table_args__ = (UniqueConstraint("scope", "key_hash", name="uq_auth_rate_scope_key"),)
+    __table_args__ = (
+        UniqueConstraint("scope", "key_hash", name="uq_auth_rate_scope_key"),
+    )
