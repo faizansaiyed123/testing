@@ -47,10 +47,10 @@ export default function DashboardPage() {
         <ErrorState description="The workspace data could not be refreshed. Retry to request the current server state again." onRetry={() => { void contacts.refetch(); void companies.refetch(); void opportunities.refetch(); void attention.refetch(); }} />
       ) : null}
       <div className="stats-grid">
-        <StatCard label="Contacts" value={loading ? "—" : contacts.data?.total ?? 0} detail="people in the workspace" accent="blue" />
-        <StatCard label="Companies" value={loading ? "—" : companies.data?.total ?? 0} detail="active organizations" />
-        <StatCard label="Pipeline" value={loading ? "—" : opportunities.data?.total ?? 0} detail="tracked opportunities" accent="green" />
-        <StatCard label="Attention" value={loading ? "—" : attention.data?.items.length ?? 0} detail="evidence-backed items" accent="amber" />
+        <StatCard label="Contacts" value={loading || contacts.isError ? "—" : contacts.data?.total ?? 0} detail="people in the workspace" accent="blue" />
+        <StatCard label="Companies" value={loading || companies.isError ? "—" : companies.data?.total ?? 0} detail="active organizations" />
+        <StatCard label="Pipeline" value={loading || opportunities.isError ? "—" : opportunities.data?.total ?? 0} detail="tracked opportunities" accent="green" />
+        <StatCard label="Attention" value={loading || attention.isError ? "—" : attention.data?.items.length ?? 0} detail="evidence-backed items" accent="amber" />
       </div>
 
       <div className="content-grid two-up">
