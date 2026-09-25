@@ -11,6 +11,10 @@ const nav = [
   { href: "/opportunities", label: "Pipeline", glyph: "P" },
   { href: "/views", label: "Saved views", glyph: "V" },
   { href: "/imports", label: "Imports", glyph: "I" },
+  { href: "/planner", label: "My work", glyph: "W" },
+  { href: "/quality", label: "Data quality", glyph: "Q" },
+  { href: "/automation", label: "Automation", glyph: "A" },
+  { href: "/settings", label: "Rules & health", glyph: "S" },
 ];
 
 export function AppShell({ children }: { children: React.ReactNode }) {
