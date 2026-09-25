@@ -6,7 +6,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/app/providers";
 import { apiFetch } from "@/lib/api";
 import type { Opportunity, OpportunityList, StuckOpportunityResponse } from "@/lib/types";
-import { Badge, Button, SectionTitle, StatCard } from "@/components/ui";
+import { Badge, Button, ErrorState, SectionTitle, StatCard } from "@/components/ui";
 
 type Stage = { id: string; name: string; order_index: number; win_probability: string | number; is_closed: boolean; is_won: boolean };
 
@@ -75,6 +75,9 @@ export default function OpportunitiesPage() {
         description="A clean operational view of open, won, and lost opportunities."
         action={<Button onClick={() => setShowCreate(true)}>New opportunity</Button>}
       />
+      {opportunities.isError ? (
+        <ErrorState description={(opportunities.error as Error).message} onRetry={() => void opportunities.refetch()} />
+      ) : null}
       <div className="stats-grid compact">
         <StatCard label="Open" value={open} detail="active opportunities" accent="blue" />
         <StatCard label="Won" value={won} detail="closed won" accent="green" />
@@ -85,7 +88,7 @@ export default function OpportunitiesPage() {
           <div><span className="eyebrow">Pipeline intelligence</span><h2>Opportunities that look stuck</h2><p>Threshold: {stuck.data?.configured_threshold_days ?? "—"} days in stage.</p></div>
           <Badge tone="warning">{stuck.data?.items.length ?? 0} flagged</Badge>
         </div>
-        {stuck.data?.items.length ? (
+        {stuck.isError ? <ErrorState description={(stuck.error as Error).message} onRetry={() => void stuck.refetch()} /> : stuck.data?.items.length ? (
           <div className="stuck-list">
             {stuck.data.items.map((item) => (
               <article key={item.id} className="stuck-item">
