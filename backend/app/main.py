@@ -11,6 +11,7 @@ from app.api.organizations import router as organizations_router
 from app.api.pipeline import router as pipeline_router
 from app.api.relationship_health import router as relationship_health_router
 from app.api.saved_views import router as saved_views_router
+from app.api.standout import router as standout_router
 from app.api.timeline import router as timeline_router
 from app.auth.routes import router as auth_router
 from app.core.config import get_settings
@@ -41,6 +42,7 @@ app.include_router(attention_router, prefix=settings.api_prefix)
 app.include_router(automation_router, prefix=settings.api_prefix)
 app.include_router(imports_router, prefix=settings.api_prefix)
 app.include_router(saved_views_router, prefix=settings.api_prefix)
+app.include_router(standout_router, prefix=settings.api_prefix)
 app.include_router(relationship_health_router, prefix=settings.api_prefix)
 
 
