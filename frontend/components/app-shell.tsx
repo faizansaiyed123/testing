@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/app/providers";
@@ -33,8 +34,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     );
   }
 
+  useEffect(() => {
+    if (!loading && !user) router.replace("/login");
+  }, [loading, router, user]);
+
   if (!user) {
-    router.replace("/login");
     return (
       <div className="boot-screen">
         <div className="boot-mark">F</div>
