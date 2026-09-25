@@ -2,6 +2,7 @@
 
 import { FormEvent, useState } from "react";
 import * as React from "react";
+import { useDrawerBehavior } from "@/lib/use-drawer-behavior";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/app/providers";
 import { apiFetch } from "@/lib/api";
@@ -218,6 +219,7 @@ function OpportunityDrawer({
 }) {
   const currentStage = stages.find((stage) => stage.id === opportunity.stage_id);
   const [name, setName] = useState(opportunity.name);
+  useDrawerBehavior(true, onClose);
   const [amount, setAmount] = useState(opportunity.amount ?? "");
   const [stageId, setStageId] = useState(opportunity.stage_id);
   const [expectedCloseDate, setExpectedCloseDate] = useState(opportunity.expected_close_date ?? "");
