@@ -9,6 +9,7 @@ from app.api.imports import router as imports_router
 from app.api.opportunities import router as opportunities_router
 from app.api.organizations import router as organizations_router
 from app.api.pipeline import router as pipeline_router
+from app.api.relationship_health import router as relationship_health_router
 from app.api.saved_views import router as saved_views_router
 from app.api.timeline import router as timeline_router
 from app.auth.routes import router as auth_router
@@ -40,6 +41,7 @@ app.include_router(attention_router, prefix=settings.api_prefix)
 app.include_router(automation_router, prefix=settings.api_prefix)
 app.include_router(imports_router, prefix=settings.api_prefix)
 app.include_router(saved_views_router, prefix=settings.api_prefix)
+app.include_router(relationship_health_router, prefix=settings.api_prefix)
 
 
 @app.get("/", include_in_schema=False)
