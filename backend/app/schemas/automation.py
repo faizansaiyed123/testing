@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import Literal
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class AutomationTaskConfig(BaseModel):
@@ -24,6 +24,8 @@ class AutomationRuleUpdate(BaseModel):
 
 
 class AutomationRuleResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: UUID
     organization_id: UUID
     name: str
