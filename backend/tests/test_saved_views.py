@@ -4,7 +4,7 @@ import pytest
 from app.auth.crypto import hash_password
 from app.auth.tokens import create_access_token
 from app.db.base import Base
-from app.models import Contact, Membership, MembershipRole, Organization, SavedView, User
+from app.models import Contact, Membership, MembershipRole, Organization, User
 
 POSTGRES_DRIVER_AVAILABLE = find_spec("psycopg") is not None
 
