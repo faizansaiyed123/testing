@@ -54,15 +54,15 @@ export default function SettingsPage() {
       <div className="content-grid two-up">
         <section className="panel">
           <div className="panel-head"><div><span className="eyebrow">Business rules</span><h2>How the workspace decides what is stale.</h2></div></div>
-          <div className="rule-list">
+          {!rules.isError ? <div className="rule-list">
             {(rules.data ?? []).map((rule) => <RuleRow key={rule.key} rule={rule} busy={update.isPending} onSave={(value) => update.mutate({ key: rule.key, value })} />)}
-          </div>
+          </div> : null}
         </section>
         <section className="panel">
           <div className="panel-head"><div><span className="eyebrow">Self diagnostics</span><h2>Operational status</h2></div><Badge tone={health.data?.status === "ok" ? "success" : health.data?.status === "error" ? "danger" : "warning"}>{health.data?.status ?? "checking"}</Badge></div>
-          <div className="health-checks">
+          {!health.isError ? <div className="health-checks">
             {Object.entries(health.data?.checks ?? {}).map(([key, check]) => <div key={key} className="health-check"><span className={`check-dot check-${check.status}`} /><div><strong>{key.replaceAll("_", " ")}</strong><p>{check.detail}</p></div></div>)}
-          </div>
+          </div> : null}
         </section>
       </div>
     </div>
