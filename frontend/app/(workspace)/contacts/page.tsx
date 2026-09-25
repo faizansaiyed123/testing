@@ -5,6 +5,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/app/providers";
 import { apiFetch } from "@/lib/api";
 import { useDebouncedValue } from "@/lib/use-debounced-value";
+import { useDrawerBehavior } from "@/lib/use-drawer-behavior";
 import type { Contact, ContactList, RelationshipHealth, TimelineResponse } from "@/lib/types";
 import { Badge, Button, EmptyState, SectionTitle } from "@/components/ui";
 
@@ -178,6 +179,7 @@ function ContactDrawer({
   error: string;
 }) {
   const [firstName, setFirstName] = useState(contact.first_name);
+  useDrawerBehavior(true, onClose);
   const [lastName, setLastName] = useState(contact.last_name);
   const [email, setEmail] = useState(contact.email ?? "");
   const [phone, setPhone] = useState(contact.phone ?? "");
