@@ -5,6 +5,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/app/providers";
 import { apiFetch } from "@/lib/api";
 import { hasAdminAccess } from "@/lib/permissions";
+import { useDrawerBehavior } from "@/lib/use-drawer-behavior";
 import type { ContactList, SavedView } from "@/lib/types";
 import { Badge, Button, EmptyState, ErrorState, SectionTitle } from "@/components/ui";
 
@@ -14,6 +15,7 @@ export default function ViewsPage() {
   const [editing, setEditing] = useState<SavedView | null>(null);
   const [message, setMessage] = useState("");
   const [creating, setCreating] = useState(false);
+  useDrawerBehavior(Boolean(creating || editing), () => { setCreating(false); setEditing(null); });
   const enabled = Boolean(accessToken && organizationId);
   const prefix = organizationId ? `/organizations/${organizationId}` : "";
   const queryClient = useQueryClient();
