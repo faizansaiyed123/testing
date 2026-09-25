@@ -4,6 +4,7 @@ from app.models.auth import AuthSession
 from app.models.automation import AutomationRule, AutomationRun
 from app.models.company import Company
 from app.models.contact import Contact
+from app.models.imports import ImportJob, ImportRow
 from app.models.opportunity import Opportunity
 from app.models.organization import Organization
 from app.models.pipeline import PipelineStage
@@ -20,6 +21,8 @@ __all__ = [
     "AutomationRun",
     "Company",
     "Contact",
+    "ImportJob",
+    "ImportRow",
     "Membership",
     "MembershipRole",
     "Opportunity",
