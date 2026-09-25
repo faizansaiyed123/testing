@@ -5,6 +5,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/app/providers";
 import { apiFetch } from "@/lib/api";
 import { hasAdminAccess } from "@/lib/permissions";
+import { useDrawerBehavior } from "@/lib/use-drawer-behavior";
 import type { AutomationRule, AutomationRun } from "@/lib/types";
 import { Badge, Button, EmptyState, ErrorState, SectionTitle } from "@/components/ui";
 
@@ -14,6 +15,7 @@ export default function AutomationPage() {
   const prefix = organizationId ? `/organizations/${organizationId}` : "";
   const isAdmin = hasAdminAccess(user?.memberships[0]?.role);
   const [creating, setCreating] = useState(false);
+  useDrawerBehavior(creating, () => setCreating(false));
   const queryClient = useQueryClient();
 
   const runs = useQuery({
