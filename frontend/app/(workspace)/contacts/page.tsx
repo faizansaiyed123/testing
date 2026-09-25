@@ -81,12 +81,16 @@ export default function ContactsPage() {
             <thead><tr><th>Name</th><th>Role</th><th>Lifecycle</th><th>Email</th><th>Signal</th></tr></thead>
             <tbody>
               {contacts.data.items.map((contact) => (
-                <tr key={contact.id} className="click-row" onClick={() => void openContact(contact)}>
-                  <td><strong>{contact.first_name} {contact.last_name}</strong><small>{contact.job_title ?? "—"}</small></td>
+                <tr key={contact.id}>
+                  <td>
+                    <button className="row-link" onClick={() => void openContact(contact)} aria-label={"Inspect " + contact.first_name + " " + contact.last_name}>
+                      <strong>{contact.first_name} {contact.last_name}</strong><small>{contact.job_title ?? "—"}</small>
+                    </button>
+                  </td>
                   <td>{contact.job_title ?? "—"}</td>
                   <td><Badge tone={contact.lifecycle === "customer" ? "success" : contact.lifecycle === "lead" ? "info" : "neutral"}>{contact.lifecycle}</Badge></td>
                   <td>{contact.email ?? "—"}</td>
-                  <td><span className="detail-link">Inspect →</span></td>
+                  <td><button className="detail-link-button" onClick={() => void openContact(contact)} aria-label={"Inspect " + contact.first_name + " " + contact.last_name + " relationship"}>Inspect →</button></td>
                 </tr>
               ))}
             </tbody>
