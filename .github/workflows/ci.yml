@@ -96,7 +96,7 @@ jobs:
 
       - name: Run browser smoke tests
         working-directory: frontend
-        run: npx playwright test e2e/smoke.spec.ts
+        run: npx playwright test e2e/smoke.spec.ts e2e/standout.spec.ts
 
 
   e2e:
@@ -172,4 +172,4 @@ jobs:
 
       - name: Run real browser E2E
         working-directory: frontend
-        run: npx playwright test e2e/real-backend.spec.ts
+        run: npx playwright test e2e/real-backend.spec.ts e2e/standout.spec.ts

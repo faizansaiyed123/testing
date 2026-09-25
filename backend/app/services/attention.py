@@ -6,15 +6,15 @@ from sqlalchemy import DateTime, and_, case, func, literal, or_, select, union_a
 from sqlalchemy.orm import Session
 
 from app.models import Activity, Contact, Opportunity, Task
-
-STALE_CONTACT_AFTER = timedelta(days=14)
-STALE_OPPORTUNITY_AFTER = timedelta(days=21)
+from app.services.business_rules import get_rule_value
 
 
 def get_attention_queue(db: Session, *, organization_id: UUID, limit: int = 50) -> list[dict[str, Any]]:
     now = datetime.now(UTC)
-    contact_cutoff = now - STALE_CONTACT_AFTER
-    opportunity_cutoff = now - STALE_OPPORTUNITY_AFTER
+    contact_days = get_rule_value(db, organization_id=organization_id, key="contact_inactivity_days")
+    opportunity_days = get_rule_value(db, organization_id=organization_id, key="opportunity_inactivity_days")
+    contact_cutoff = now - timedelta(days=contact_days)
+    opportunity_cutoff = now - timedelta(days=opportunity_days)
 
     contact_last_activity = (
         select(func.max(Activity.occurred_at))

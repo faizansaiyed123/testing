@@ -2,101 +2,102 @@
 
 **Product:** Fieldline CRM  
 **Repository:** `faizansaiyed123/testing`  
+**Working branch:** `feature/standout-crm`  
 **Stable branch:** `main`  
-**Current status date:** 2026-09-25
+**Status date:** 2026-09-25
 
-## Current state
+## Verified foundation on main
 
-The planned CRM product foundation and full-stack workspace are implemented on `main`.
+The CRM core and frontend workspace are already merged into `main`, including:
+- multi-tenant FastAPI + PostgreSQL
+- secure authentication/session lifecycle with refresh rotation and CSRF binding
+- tenant/role authorization and rate limiting
+- companies, contacts, opportunities, pipeline, tasks, activities, audit events
+- Customer 360 timeline
+- explainable attention queue
+- idempotent workflow automation
+- transaction-safe CSV import
+- saved views
+- relationship health
+- responsive Next.js frontend with public landing, auth, dashboard, contacts, pipeline, saved views, and imports
 
-The active mainline contains:
-- Multi-tenant FastAPI + PostgreSQL CRM backend.
-- Secure authentication and session lifecycle.
-- Tenant/role authorization and abuse-rate limiting.
-- Companies, contacts, pipeline stages, opportunities, activities, tasks, and audit events.
-- Customer 360 timeline with bounded cursor pagination.
-- Deterministic explainable attention queue.
-- Deterministic idempotent workflow automation.
-- Transaction-safe contact CSV import with preview, validation, dry-run, commit, and audit trail.
-- Tenant-scoped saved contact views with validated filters and real execution.
-- Deterministic relationship-health scoring with explicit evidence.
-- Next.js frontend with a public landing page and authenticated workspace.
-- Secure refresh-cookie session restoration and CSRF-aware client requests.
-- Responsive dashboard, attention queue, contacts, relationship-health drawer, pipeline, saved views, and CSV import interfaces.
-- Browser smoke coverage and a real browser-to-FastAPI-to-PostgreSQL E2E flow.
-- CI that verifies exact pull-request heads, backend migrations/tests, frontend typecheck/build, browser smoke, and live browser E2E.
+## Standout expansion in PR #13
 
-## Merge history
+Selected after comparing documented CRM patterns across mainstream products and self-hosted/open-source systems. The goal is 4–7 deep additions, not a feature-count race.
 
-- PR #6 — cumulative CRM backend foundation — merged.
-- PR #7 — CSV import — merged.
-- PR #8 — saved views — merged.
-- PR #9 — relationship health — merged.
-- PR #10 — frontend workspace — merged.
-- PR #11 — real browser-to-backend E2E gate — merged.
+### 1. Data Quality Center + safe duplicate merge
+- PostgreSQL `pg_trgm` candidate generation for fuzzy names.
+- Exact email/phone/website matching where available.
+- Explainable duplicate reasons.
+- Severity-based data-quality issue ledger.
+- Transactional contact/company merge.
+- Relationship re-parenting for contacts, opportunities, activities, and tasks.
+- Soft deletion of merged records.
+- Idempotent merge guard and audit events.
 
-No pull requests remain open.
+### 2. Daily Work Planner
+- Composes existing attention signals with stuck-opportunity detection.
+- Deterministic priority.
+- Explicit evidence.
+- Concrete next action.
+- No external AI service.
 
-## Verification
+### 3. Pipeline stuck-opportunity detection
+- Configurable stage-aging threshold.
+- Configurable activity-inactivity threshold.
+- Expected-close proximity.
+- Overdue task detection.
+- Missing-next-action detection.
+- Human-readable reasons and recommended action.
 
-The authoritative current main CI run for commit `59e261ac121c7834c66b42c157f3e605d630c0cb` passed:
-- PostgreSQL service startup.
-- Backend installation.
-- Ruff lint.
-- Python compilation.
-- Full Alembic migration chain.
-- Full PostgreSQL-backed backend test suite.
-- Frontend dependency installation.
-- TypeScript typecheck.
-- Next.js production build.
-- Chromium browser smoke test.
-- Real browser E2E against a live FastAPI server and PostgreSQL database.
+### 4. Observable workflow execution
+- Admin-only execution history.
+- Workflow name, trigger, event key, action, status, result, timestamps.
+- Existing idempotent execution records become inspectable instead of invisible.
 
-The real browser E2E exercises the actual signup flow, reads the database-backed dashboard, creates a contact through the UI, and verifies the updated workspace state.
+### 5. Configurable business rules
+- Per-organization inactivity/stage-aging thresholds.
+- Admin-only changes.
+- Values are consumed by attention and planning logic immediately.
 
-## Migrations
+### 6. Relationship graph
+- Tenant-scoped contact graph data.
+- Company/opportunity/task/activity edges.
+- Local SVG rendering in the frontend.
+- No external graph service required.
 
-The active Alembic chain on `main` is linear through:
-`0001_bootstrap`,
-`0002_identity`,
-`0003_auth_sessions`,
-`0004_auth_rate_limits`,
-`0005_crm_core`,
-`0006_activity_tasks_audit`,
-`0007_timeline_indexes`,
-`0008_attention_indexes`,
-`0009_automation`,
-`0010_import_jobs`,
-`0011_saved_views`.
+### 7. Self-diagnostic admin health
+- Database connectivity.
+- Alembic migration version.
+- `pg_trgm` availability.
+- Incomplete automation-run detection.
+- No secrets exposed.
 
-## Security and reliability notes
+## Verification status for PR #13
 
-Successful signups do not consume the failure quota; only failed signup attempts are recorded for abuse control.
+Backend:
+- Ruff: green on the latest validated head.
+- Python compilation: green.
+- Alembic migration `0012_standout`: green on PostgreSQL 18.
+- Standout backend integration suite: green on the validated head.
+- Full current-head run remains the final merge gate after the latest frontend/browser additions.
 
-Attention scoring is deterministic and evidence-based. Newly created contacts are not flagged as stale until their creation/activity age crosses the configured threshold.
+Frontend:
+- TypeScript typecheck: green on the validated standout head.
+- Next.js production build: green.
+- Existing browser smoke suite: green.
+- New standout browser tests cover Data Quality, Daily Planner, Relationship Graph, and Rules/Health surfaces.
 
-Automation execution is idempotent through a unique rule/event key, and automation-created tasks remain linked to the originating opportunity and audit history.
+E2E:
+- PostgreSQL startup, migrations, backend startup, frontend install, and frontend build have all been exercised on the standout branch.
+- The real-browser Chromium step is the remaining live gate on the latest head.
 
-All organization-scoped endpoints use reusable membership/role authorization and reject cross-tenant entity references.
+## Research basis
 
-## Frontend verification scope
+The selected architecture emphasizes patterns documented in CRM products such as duplicate management, matching rules, prioritized next actions, activity chaining, configurable workflows, saved views, auditability, and self-hosting. The implementation deliberately keeps these ideas self-contained and deterministic.
 
-The frontend is responsive and mobile-safe, including horizontally contained data tables and full-width mobile drawers.
+## Recovery rule
 
-The standard browser smoke test uses mocked API responses to verify rendering/layout behavior.
-
-The dedicated E2E test uses real FastAPI + PostgreSQL services and verifies a complete user journey through signup and contact creation.
-
-The latest production fix initializes the first asynchronously loaded pipeline stage in the opportunity form so the create flow remains usable when stage data arrives after the component mounts.
-
-## Local verification limitation
-
-The local execution container does not provide Docker/PostgreSQL client tooling or external package installation, so local live-DB verification is not claimed. The authoritative verification runs were executed by GitHub Actions with PostgreSQL 18 and Node/Chromium.
-
-## Repository hygiene
-
-Older overlapping feature branches may remain as historical/reference branches. They are not the active implementation path.
-
-Before resuming after interruption, inspect Git refs, PR state, commits, migrations, tests, and existing implementation. Do not recreate completed work or rewrite useful history.
+Before resuming after interruption, inspect Git refs, PR state, commits, migrations, tests, and existing implementation. Never recreate completed work or rewrite useful history.
 
 Never mark a feature verified unless its relevant code path and tests have actually been exercised.

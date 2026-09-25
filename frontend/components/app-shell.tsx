@@ -8,9 +8,14 @@ import { Button } from "@/components/ui";
 const nav = [
   { href: "/dashboard", label: "Overview", glyph: "O" },
   { href: "/contacts", label: "Contacts", glyph: "C" },
+  { href: "/relationships", label: "Relationships", glyph: "G" },
   { href: "/opportunities", label: "Pipeline", glyph: "P" },
   { href: "/views", label: "Saved views", glyph: "V" },
   { href: "/imports", label: "Imports", glyph: "I" },
+  { href: "/planner", label: "My work", glyph: "W" },
+  { href: "/quality", label: "Data quality", glyph: "Q" },
+  { href: "/automation", label: "Automation", glyph: "A" },
+  { href: "/settings", label: "Rules & health", glyph: "S" },
 ];
 
 export function AppShell({ children }: { children: React.ReactNode }) {
