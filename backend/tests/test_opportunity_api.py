@@ -32,7 +32,7 @@ def test_opportunity_workflow(client, db_session) -> None:
         win_probability=0.5,
     )
     company = Company(
-        organization=organization,
+        organization_id=organization.id,
         owner_user_id=user.id,
         name="Sales Company",
     )
@@ -129,7 +129,7 @@ def test_opportunity_rejects_cross_tenant_company(client, db_session) -> None:
         order_index=10,
     )
     other_company = Company(
-        organization=other,
+        organization_id=other.id,
         owner_user_id=other_user.id,
         name="Other Company",
     )
