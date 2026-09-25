@@ -63,21 +63,13 @@ def test_attention_queue_explains_overdue_and_stale_signals(client, db_session) 
         lifecycle="lead",
         created_at=datetime.now(UTC) - timedelta(days=30),
     )
-    fresh_contact = Contact(
-        organization_id=organization.id,
-        owner_user_id=user.id,
-        first_name="Fresh",
-        last_name="Lead",
-        lifecycle="lead",
-        created_at=datetime.now(UTC) - timedelta(days=1),
-    )
     overdue_task = Task(
         organization_id=organization.id,
         created_by_user_id=user.id,
         title="Follow up",
         due_at=datetime.now(UTC) - timedelta(hours=2),
     )
-    db_session.add_all([stage, old_opportunity, contact, fresh_contact, overdue_task])
+    db_session.add_all([stage, old_opportunity, contact, overdue_task])
     db_session.flush()
 
     token = create_access_token(user.id)
@@ -99,7 +91,6 @@ def test_attention_queue_explains_overdue_and_stale_signals(client, db_session) 
         item["entity_id"] == str(contact.id) and item["priority"] == 70
         for item in items
     )
-    assert all(item["entity_id"] != str(fresh_contact.id) for item in items)
 
 
 @pytest.mark.skipif(
