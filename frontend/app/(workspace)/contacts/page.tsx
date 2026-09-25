@@ -4,12 +4,14 @@ import { FormEvent, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/app/providers";
 import { apiFetch } from "@/lib/api";
+import { useDebouncedValue } from "@/lib/use-debounced-value";
 import type { Contact, ContactList, RelationshipHealth, TimelineResponse } from "@/lib/types";
 import { Badge, Button, EmptyState, SectionTitle } from "@/components/ui";
 
 export default function ContactsPage() {
   const { accessToken, organizationId } = useAuth();
   const [query, setQuery] = useState("");
+  const debouncedQuery = useDebouncedValue(query);
   const [page, setPage] = useState(1);
   const pageSize = 25;
   const [selected, setSelected] = useState<Contact | null>(null);
@@ -22,11 +24,11 @@ export default function ContactsPage() {
   const prefix = organizationId ? `/organizations/${organizationId}` : "";
 
   const contacts = useQuery({
-    queryKey: ["contacts", organizationId, query, page],
+    queryKey: ["contacts", organizationId, debouncedQuery, page],
     enabled,
     queryFn: () =>
       apiFetch<ContactList>(
-        `${prefix}/contacts?page=${page}&page_size=${pageSize}${query ? `&q=${encodeURIComponent(query)}` : ""}`,
+        `${prefix}/contacts?page=${page}&page_size=${pageSize}${debouncedQuery ? `&q=${encodeURIComponent(debouncedQuery)}` : ""}`,
         {},
         accessToken,
       ),
