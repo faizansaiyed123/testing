@@ -59,7 +59,6 @@ class MergeResponse(BaseModel):
     entity_type: Literal["contact", "company"]
     survivor_id: UUID
     merged_id: UUID
-    transferred_relations: dict[str, int]
     completed_at: datetime
 
 
@@ -129,7 +128,7 @@ class GraphNode(BaseModel):
     id: str
     type: str
     label: str
-    meta: dict[str, str | None] = {}
+    meta: dict[str, str | None] = Field(default_factory=dict)
 
 
 class GraphEdge(BaseModel):
