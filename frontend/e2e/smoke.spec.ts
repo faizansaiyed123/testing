@@ -105,8 +105,10 @@ test("renders the authenticated dashboard from live-shaped API data", async ({ p
   await expect(
     page.getByRole("heading", { name: "Good morning. Here is the signal." }),
   ).toBeVisible();
-  await expect(page.getByText("3 contacts")).toBeVisible();
-  await expect(page.getByText("2")).toBeVisible();
+  const contactsCard = page.locator(".stat-card").filter({ hasText: "Contacts" });
+  const companiesCard = page.locator(".stat-card").filter({ hasText: "Companies" });
+  await expect(contactsCard.locator("strong")).toHaveText("3");
+  await expect(companiesCard.locator("strong")).toHaveText("2");
   await expect(page.getByText("Follow up with Acme")).toBeVisible();
   await expect(page.getByText("Evidence based")).toBeVisible();
 
