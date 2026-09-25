@@ -152,4 +152,4 @@ def test_contact_timeline_enforces_tenant_scope(client, db_session) -> None:
         f"/api/v1/organizations/{org.id}/contacts/{contact.id}/timeline",
         headers={"Authorization": f"Bearer {token}"},
     )
-    assert response.status_code == 403
+    assert response.status_code == 404
