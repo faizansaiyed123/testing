@@ -150,7 +150,7 @@ def test_import_revalidates_and_refuses_new_duplicate(client, db_session) -> Non
         select(func.count())
         .select_from(Contact)
         .where(Contact.email == "new@example.com")
-    ) == 1
+    ) == 0
 
 
 @pytest.mark.skipif(
