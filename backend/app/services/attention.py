@@ -9,7 +9,6 @@ from app.models import Activity, Contact, Opportunity, Task
 from app.services.business_rules import get_rule_value
 
 
-
 def get_attention_queue(db: Session, *, organization_id: UUID, limit: int = 50) -> list[dict[str, Any]]:
     now = datetime.now(UTC)
     contact_days = get_rule_value(db, organization_id=organization_id, key="contact_inactivity_days")
