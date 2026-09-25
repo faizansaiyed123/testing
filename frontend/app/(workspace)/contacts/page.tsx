@@ -102,9 +102,9 @@ export default function ContactsPage() {
 
       {selected ? (
         <div className="drawer-backdrop" onClick={() => setSelected(null)}>
-          <aside className="drawer" onClick={(e) => e.stopPropagation()}>
+          <aside className="drawer" role="dialog" aria-modal="true" aria-labelledby="relationship-drawer-title" onClick={(e) => e.stopPropagation()}>
             <div className="drawer-head">
-              <div><span className="eyebrow">Relationship</span><h2>{selected.first_name} {selected.last_name}</h2><p>{selected.email ?? "No email on file"}</p></div>
+              <div><span className="eyebrow">Relationship</span><h2 id="relationship-drawer-title">{selected.first_name} {selected.last_name}</h2><p>{selected.email ?? "No email on file"}</p></div>
               <button className="icon-button" onClick={() => setSelected(null)} aria-label="Close">×</button>
             </div>
             <div className="health-card">
