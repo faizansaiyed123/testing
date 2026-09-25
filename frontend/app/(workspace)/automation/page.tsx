@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/app/providers";
 import { apiFetch } from "@/lib/api";
+import { hasAdminAccess } from "@/lib/permissions";
 import type { AutomationRule, AutomationRun } from "@/lib/types";
 import { Badge, Button, EmptyState, ErrorState, SectionTitle } from "@/components/ui";
 
@@ -11,7 +12,7 @@ export default function AutomationPage() {
   const { accessToken, organizationId, user } = useAuth();
   const enabled = Boolean(accessToken && organizationId);
   const prefix = organizationId ? `/organizations/${organizationId}` : "";
-  const isAdmin = user?.memberships[0]?.role !== "member";
+  const isAdmin = hasAdminAccess(user?.memberships[0]?.role);
   const [creating, setCreating] = useState(false);
   const queryClient = useQueryClient();
 
