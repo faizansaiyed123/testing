@@ -5,7 +5,6 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.auth.authorization import require_membership
-from app.auth.dependencies import get_current_user_id
 from app.db.session import get_db
 from app.models import Membership, MembershipRole
 from app.schemas.contact import ContactListResponse, ContactResponse
