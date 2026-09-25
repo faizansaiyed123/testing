@@ -18,6 +18,7 @@ from app.models import (
     Organization,
     PipelineStage,
     Task,
+    User,
 )
 from app.services.business_rules import set_rule_value
 from app.services.data_quality import build_data_quality_report
@@ -29,7 +30,7 @@ POSTGRES_DRIVER_AVAILABLE = find_spec("psycopg") is not None
 
 def _identity(db_session, *, role: MembershipRole = MembershipRole.OWNER):
     organization = Organization(name="Standout Org", slug=f"standout-{id(db_session)}")
-    user = __import__("app.models", fromlist=["User"]).User(
+    user = User(
         email=f"standout-{id(db_session)}@example.com",
         full_name="Standout User",
         password_hash=hash_password("Correct Horse Battery Staple"),
@@ -236,6 +237,9 @@ def test_relationship_graph_is_tenant_scoped(client, db_session) -> None:
         owner_user_id=user.id,
         name="Graph Co",
     )
+    db_session.add(company)
+    db_session.flush()
+
     contact = Contact(
         organization_id=organization.id,
         owner_user_id=user.id,
@@ -243,7 +247,7 @@ def test_relationship_graph_is_tenant_scoped(client, db_session) -> None:
         first_name="Graph",
         last_name="User",
     )
-    db_session.add_all([company, contact])
+    db_session.add(contact)
     db_session.flush()
 
     token = create_access_token(user.id)
