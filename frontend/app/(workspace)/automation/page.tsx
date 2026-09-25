@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/app/providers";
 import { apiFetch } from "@/lib/api";
 import type { AutomationRun } from "@/lib/types";
-import { Badge, EmptyState, SectionTitle } from "@/components/ui";
+import { Badge, EmptyState, SectionTitle, ErrorState } from "@/components/ui";
 
 export default function AutomationPage() {
   const { accessToken, organizationId, user } = useAuth();
@@ -27,6 +27,8 @@ export default function AutomationPage() {
       />
       {!isAdmin ? (
         <div className="form-error">Owner/admin access is required to inspect workflow execution history.</div>
+      ) : runs.isError ? (
+        <ErrorState description={(runs.error as Error).message} onRetry={() => void runs.refetch()} />
       ) : runs.data?.length ? (
         <section className="panel">
           <div className="panel-head"><div><span className="eyebrow">Recent runs</span><h2>Auditable automation activity</h2></div><span className="toolbar-meta">{runs.data.length} runs</span></div>
