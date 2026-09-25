@@ -1,7 +1,7 @@
 from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import String, and_, cast, func, literal, or_, select, union_all
+from sqlalchemy import and_, func, literal, or_, select, union_all
 from sqlalchemy.orm import Session
 
 from app.models import Activity, AuditEvent, Task
@@ -70,7 +70,10 @@ def get_contact_timeline(
             )
 
     rows = db.execute(
-        statement.order_by(timeline.c.timestamp.desc(), timeline.c.id.desc()).limit(limit + 1)
+        statement.order_by(
+            timeline.c.timestamp.desc(),
+            timeline.c.id.desc(),
+        ).limit(limit + 1)
     ).mappings().all()
 
     has_more = len(rows) > limit
