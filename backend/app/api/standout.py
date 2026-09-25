@@ -16,8 +16,8 @@ from app.schemas.standout import (
     MergeResponse,
     RelationshipGraphResponse,
     StuckOpportunityResponse,
-    SystemHealthResponse,
     AutomationRunResponse,
+    SystemHealthResponse,
 )
 from app.services.automation_history import get_automation_run, list_automation_runs
 from app.services.business_rules import list_rule_values, set_rule_value
