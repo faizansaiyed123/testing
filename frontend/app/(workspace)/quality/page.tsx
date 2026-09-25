@@ -66,7 +66,7 @@ export default function QualityPage() {
         <StatCard label="Stale contacts" value={summary?.stale_contacts ?? "—"} detail="lead/prospect inactivity" accent="green" />
       </div>
 
-      <div className="content-grid two-up">
+      {!report.isError ? <div className="content-grid two-up">
         <section className="panel">
           <div className="panel-head">
             <div><span className="eyebrow">Duplicate candidates</span><h2>Review before merging.</h2></div>
@@ -100,7 +100,7 @@ export default function QualityPage() {
             {!report.data?.issues.length && !report.isLoading ? <div className="panel-empty">The workspace is clean.</div> : null}
           </div>
         </section>
-      </div>
+      </div> : null}
 
       {selected ? (
         <div className="drawer-backdrop" onClick={() => setSelected(null)}>
