@@ -327,3 +327,9 @@ select:focus-visible {
 
 .pagination{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px 0;color:var(--muted);font-size:12px}
 .pagination>div{display:flex;gap:8px}
+
+.error-state{display:flex;align-items:flex-start;gap:12px;border:1px solid #5a2d2d;background:#241515;color:#f2caca;border-radius:12px;padding:14px;margin-bottom:16px}
+.error-mark{width:28px;height:28px;border-radius:9px;display:grid;place-items:center;background:#3a2020;color:#ffb1b1;font-weight:850}
+.error-state strong{font-size:12px}.error-state p{margin:4px 0 10px;color:#caaead;font-size:11px;line-height:1.5}
+.drawer-form-divider{margin:22px 0 18px;border-top:1px solid var(--line)}
+.drawer-section-title{margin:7px 0 0;font-size:18px}
