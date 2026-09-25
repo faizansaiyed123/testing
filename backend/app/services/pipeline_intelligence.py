@@ -1,7 +1,7 @@
 from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
-from sqlalchemy import DateTime, and_, cast, exists, func, select
+from sqlalchemy import String, and_, cast, exists, func, select
 from sqlalchemy.orm import Session
 
 from app.models import Activity, AuditEvent, Opportunity, PipelineStage, Task
@@ -42,7 +42,7 @@ def get_stuck_opportunities(
             AuditEvent.organization_id == organization_id,
             AuditEvent.entity_type == "opportunity",
             AuditEvent.entity_id == Opportunity.id,
-            AuditEvent.after_data["stage_id"].astext == cast(Opportunity.stage_id, DateTime).cast(str),
+            AuditEvent.after_data["stage_id"].astext == cast(Opportunity.stage_id, String),
         )
         .correlate(Opportunity)
         .scalar_subquery()
@@ -154,15 +154,3 @@ def get_stuck_opportunities(
     )
     return items
 
-
-def stage_entry_expression(opportunity: Opportunity):
-    return (
-        select(func.max(AuditEvent.created_at))
-        .where(
-            AuditEvent.organization_id == opportunity.organization_id,
-            AuditEvent.entity_type == "opportunity",
-            AuditEvent.entity_id == opportunity.id,
-        )
-        .correlate(opportunity)
-        .scalar_subquery()
-    )
