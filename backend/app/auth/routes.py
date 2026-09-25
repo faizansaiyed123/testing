@@ -125,7 +125,6 @@ def signup(
 ) -> AuthResponse:
     client_ip = request.client.host if request.client else "unknown"
     check_allowed(db, "signup-ip", client_ip, SIGNUP_IP_LIMIT, SIGNUP_WINDOW)
-    record_failure(db, "signup-ip", client_ip, SIGNUP_IP_LIMIT, SIGNUP_WINDOW)
 
     email = str(payload.email).lower()
     slug = "-".join(payload.organization_name.lower().split())[:80].strip("-") or "organization"
@@ -134,6 +133,7 @@ def signup(
 
     existing = db.scalar(select(User).where(func.lower(User.email) == email).limit(1))
     if existing:
+        record_failure(db, "signup-ip", client_ip, SIGNUP_IP_LIMIT, SIGNUP_WINDOW)
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Unable to create account")
 
     organization = Organization(name=payload.organization_name, slug=slug)
@@ -154,11 +154,13 @@ def signup(
         ) or user
     except IntegrityError as exc:
         db.rollback()
+        record_failure(db, "signup-ip", client_ip, SIGNUP_IP_LIMIT, SIGNUP_WINDOW)
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="Unable to create account",
         ) from exc
 
+    clear_failures(db, "signup-ip", client_ip)
     _set_session_cookies(response, refresh_token, csrf_token)
     return AuthResponse(access_token=create_access_token(user.id), user=_build_user_response(user))
 
