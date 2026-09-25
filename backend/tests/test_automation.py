@@ -36,6 +36,9 @@ def test_admin_can_create_rule_and_won_transition_runs_once(client, db_session) 
         user=user,
         role=MembershipRole.OWNER,
     )
+    db_session.add_all([organization, user, membership])
+    db_session.flush()
+
     open_stage = PipelineStage(
         organization_id=organization.id,
         name="Proposal",
