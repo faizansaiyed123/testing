@@ -1,6 +1,7 @@
 from app.models.activity import Activity
 from app.models.audit import AuditEvent
 from app.models.auth import AuthSession
+from app.models.automation import AutomationRule, AutomationRun
 from app.models.company import Company
 from app.models.contact import Contact
 from app.models.opportunity import Opportunity
@@ -15,6 +16,8 @@ __all__ = [
     "AuditEvent",
     "AuthRateLimit",
     "AuthSession",
+    "AutomationRule",
+    "AutomationRun",
     "Company",
     "Contact",
     "Membership",
