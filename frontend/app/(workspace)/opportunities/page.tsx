@@ -54,6 +54,22 @@ export default function OpportunitiesPage() {
     },
   });
 
+  const openCount = useQuery({
+    queryKey: ["opportunity-count", organizationId, "open"],
+    enabled,
+    queryFn: () => apiFetch<OpportunityList>(`${prefix}/opportunities?status=open&page=1&page_size=1`, {}, accessToken),
+  });
+  const wonCount = useQuery({
+    queryKey: ["opportunity-count", organizationId, "won"],
+    enabled,
+    queryFn: () => apiFetch<OpportunityList>(`${prefix}/opportunities?status=won&page=1&page_size=1`, {}, accessToken),
+  });
+  const lostCount = useQuery({
+    queryKey: ["opportunity-count", organizationId, "lost"],
+    enabled,
+    queryFn: () => apiFetch<OpportunityList>(`${prefix}/opportunities?status=lost&page=1&page_size=1`, {}, accessToken),
+  });
+
   const create = useMutation({
     mutationFn: (input: Record<string, unknown>) =>
       apiFetch<Opportunity>(`${prefix}/opportunities`, { method: "POST", body: input }, accessToken),
@@ -64,9 +80,9 @@ export default function OpportunitiesPage() {
   });
 
   const items = opportunities.data?.items ?? [];
-  const open = items.filter((item) => item.status === "open").length;
-  const won = items.filter((item) => item.status === "won").length;
-  const lost = items.filter((item) => item.status === "lost").length;
+  const open = openCount.data?.total ?? 0;
+  const won = wonCount.data?.total ?? 0;
+  const lost = lostCount.data?.total ?? 0;
 
   return (
     <div className="page">
@@ -78,6 +94,9 @@ export default function OpportunitiesPage() {
       />
       {opportunities.isError ? (
         <ErrorState description={(opportunities.error as Error).message} onRetry={() => void opportunities.refetch()} />
+      ) : null}
+      {openCount.isError || wonCount.isError || lostCount.isError ? (
+        <div className="callout" role="status">Pipeline summary is temporarily unavailable; the record list remains usable.</div>
       ) : null}
       <div className="stats-grid compact">
         <StatCard label="Open" value={open} detail="active opportunities" accent="blue" />
