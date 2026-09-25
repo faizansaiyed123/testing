@@ -1,6 +1,5 @@
 import csv
 import io
-from collections.abc import Iterable
 from datetime import UTC, datetime
 from uuid import UUID
 
@@ -107,7 +106,7 @@ def _validate_row(
         "phone": phone,
         "job_title": job_title,
         "lifecycle": lifecycle,
-        "company_id": company_id,
+        "company_id": str(company_id) if company_id else None,
     }
     return normalized, errors
 
@@ -183,6 +182,8 @@ def commit_contact_import(
     for item in job.rows:
         row_number = int(item["row_number"])
         data = dict(item["data"])
+        if data.get("company_id"):
+            data["company_id"] = UUID(str(data["company_id"]))
         if any(error["row_number"] == row_number for error in errors):
             skipped += 1
             continue
