@@ -13,7 +13,6 @@ if TYPE_CHECKING:
     from app.models.company import Company
     from app.models.contact import Contact
     from app.models.pipeline import PipelineStage
-    from app.models.user import User
 
 
 class Opportunity(Base):

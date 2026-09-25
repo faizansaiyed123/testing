@@ -11,7 +11,6 @@ from app.db.base import Base
 if TYPE_CHECKING:
     from app.models.company import Company
     from app.models.opportunity import Opportunity
-    from app.models.user import User
 
 
 class Contact(Base):
