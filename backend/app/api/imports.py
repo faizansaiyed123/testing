@@ -2,6 +2,7 @@ from pathlib import Path
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.auth.authorization import require_membership
@@ -72,7 +73,7 @@ def get_import(
     db: Session = Depends(get_db),
 ) -> ImportResponse:
     job = db.scalar(
-        __import__("sqlalchemy").select(ImportJob)
+        select(ImportJob)
         .where(ImportJob.organization_id == organization_id)
         .where(ImportJob.created_by_user_id == membership.user_id)
         .where(ImportJob.id == job_id)
