@@ -89,3 +89,11 @@ jobs:
         env:
           BACKEND_URL: http://127.0.0.1:8000
         run: npm run build
+
+      - name: Install Chromium
+        working-directory: frontend
+        run: npx playwright install --with-deps chromium
+
+      - name: Run browser smoke tests
+        working-directory: frontend
+        run: npm run e2e
