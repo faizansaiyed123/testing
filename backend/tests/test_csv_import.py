@@ -6,7 +6,8 @@ from sqlalchemy import func, select
 
 from app.auth.crypto import hash_password
 from app.auth.tokens import create_access_token
-from app.models import Contact, ImportJob, ImportRow, Membership, MembershipRole, Organization, User
+from app.models import Contact, ImportJob, Membership, MembershipRole, Organization, User
+from app.services.imports import MAX_FILE_SIZE, _parse_csv
 
 POSTGRES_DRIVER_AVAILABLE = find_spec("psycopg") is not None
 
@@ -165,8 +166,6 @@ def test_member_cannot_import_contacts(client, db_session) -> None:
         headers={"Authorization": f"Bearer {token}"},
     )
     assert response.status_code == 403
-
-from app.services.imports import MAX_FILE_SIZE, _parse_csv
 
 
 def test_csv_parser_rejects_missing_required_header() -> None:
