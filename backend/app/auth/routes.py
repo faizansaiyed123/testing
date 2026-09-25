@@ -1,6 +1,6 @@
 import hashlib
 import secrets
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
@@ -18,13 +18,20 @@ from app.auth.rate_limit import (
     SIGNUP_WINDOW,
     check_allowed,
     clear_failures,
-    record_attempt,
+    record_failure,
 )
-from app.auth.schemas import AuthResponse, LoginRequest, RefreshResponse, SignupRequest, UserResponse
+from app.auth.schemas import (
+    AuthResponse,
+    LoginRequest,
+    RefreshResponse,
+    SignupRequest,
+    UserResponse,
+)
 from app.auth.tokens import create_access_token, create_refresh_token, hash_refresh_token
 from app.core.config import get_settings
 from app.db.session import get_db
 from app.models import AuthSession, Membership, MembershipRole, Organization, User
+from app.services.pipeline import create_default_pipeline
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -85,7 +92,7 @@ def _create_session(db: Session, user_id: UUID) -> tuple[str, str]:
         user_id=user_id,
         refresh_token_hash=hash_refresh_token(refresh_token),
         csrf_token_hash=_csrf_hash(csrf_token),
-        expires_at=datetime.now(timezone.utc) + timedelta(days=settings.refresh_token_expire_days),
+        expires_at=datetime.now(UTC) + timedelta(days=settings.refresh_token_expire_days),
     )
     db.add(session)
     return refresh_token, csrf_token
@@ -96,7 +103,7 @@ def _lookup_session(db: Session, refresh_token: str, *, lock: bool = False) -> A
         select(AuthSession)
         .where(AuthSession.refresh_token_hash == hash_refresh_token(refresh_token))
         .where(AuthSession.revoked_at.is_(None))
-        .where(AuthSession.expires_at > datetime.now(timezone.utc))
+        .where(AuthSession.expires_at > datetime.now(UTC))
         .limit(1)
     )
     if lock:
@@ -110,10 +117,14 @@ def _validate_session_csrf(csrf_token: str, session: AuthSession) -> None:
 
 
 @router.post("/signup", response_model=AuthResponse, status_code=status.HTTP_201_CREATED)
-def signup(payload: SignupRequest, request: Request, response: Response, db: Session = Depends(get_db)) -> AuthResponse:
+def signup(
+    payload: SignupRequest,
+    request: Request,
+    response: Response,
+    db: Session = Depends(get_db),
+) -> AuthResponse:
     client_ip = request.client.host if request.client else "unknown"
     check_allowed(db, "signup-ip", client_ip, SIGNUP_IP_LIMIT, SIGNUP_WINDOW)
-    record_attempt(db, "signup-ip", client_ip, SIGNUP_IP_LIMIT, SIGNUP_WINDOW)
 
     email = str(payload.email).lower()
     slug = "-".join(payload.organization_name.lower().split())[:80].strip("-") or "organization"
@@ -122,6 +133,7 @@ def signup(payload: SignupRequest, request: Request, response: Response, db: Ses
 
     existing = db.scalar(select(User).where(func.lower(User.email) == email).limit(1))
     if existing:
+        record_failure(db, "signup-ip", client_ip, SIGNUP_IP_LIMIT, SIGNUP_WINDOW)
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Unable to create account")
 
     organization = Organization(name=payload.organization_name, slug=slug)
@@ -134,6 +146,7 @@ def signup(payload: SignupRequest, request: Request, response: Response, db: Ses
     db.add_all([organization, user, membership])
     try:
         db.flush()
+        create_default_pipeline(db, organization.id)
         refresh_token, csrf_token = _create_session(db, user.id)
         db.commit()
         user = db.scalar(
@@ -141,14 +154,24 @@ def signup(payload: SignupRequest, request: Request, response: Response, db: Ses
         ) or user
     except IntegrityError as exc:
         db.rollback()
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Unable to create account") from exc
+        record_failure(db, "signup-ip", client_ip, SIGNUP_IP_LIMIT, SIGNUP_WINDOW)
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Unable to create account",
+        ) from exc
 
+    clear_failures(db, "signup-ip", client_ip)
     _set_session_cookies(response, refresh_token, csrf_token)
     return AuthResponse(access_token=create_access_token(user.id), user=_build_user_response(user))
 
 
 @router.post("/login", response_model=AuthResponse)
-def login(payload: LoginRequest, request: Request, response: Response, db: Session = Depends(get_db)) -> AuthResponse:
+def login(
+    payload: LoginRequest,
+    request: Request,
+    response: Response,
+    db: Session = Depends(get_db),
+) -> AuthResponse:
     email = str(payload.email).lower()
     client_ip = request.client.host if request.client else "unknown"
     login_key = f"{email}|{client_ip}"
@@ -156,12 +179,18 @@ def login(payload: LoginRequest, request: Request, response: Response, db: Sessi
     check_allowed(db, "login-ip", client_ip, LOGIN_IP_LIMIT, LOGIN_WINDOW)
 
     user = db.scalar(
-        select(User).options(selectinload(User.memberships)).where(func.lower(User.email) == email).limit(1)
+        select(User)
+        .options(selectinload(User.memberships))
+        .where(func.lower(User.email) == email)
+        .limit(1)
     )
     if user is None or not user.is_active or not verify_password(payload.password, user.password_hash):
-        record_attempt(db, "login-email", login_key, LOGIN_EMAIL_LIMIT, LOGIN_WINDOW)
-        record_attempt(db, "login-ip", client_ip, LOGIN_IP_LIMIT, LOGIN_WINDOW)
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
+        record_failure(db, "login-email", login_key, LOGIN_EMAIL_LIMIT, LOGIN_WINDOW)
+        record_failure(db, "login-ip", client_ip, LOGIN_IP_LIMIT, LOGIN_WINDOW)
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid credentials",
+        )
 
     clear_failures(db, "login-email", login_key)
     refresh_token, csrf_token = _create_session(db, user.id)
@@ -171,13 +200,17 @@ def login(payload: LoginRequest, request: Request, response: Response, db: Sessi
 
 
 @router.post("/refresh", response_model=RefreshResponse)
-def refresh(request: Request, response: Response, db: Session = Depends(get_db)) -> RefreshResponse:
+def refresh(
+    request: Request,
+    response: Response,
+    db: Session = Depends(get_db),
+) -> RefreshResponse:
     csrf_token = _require_csrf(request)
     refresh_token = request.cookies.get(_session_cookie_name())
     if not refresh_token:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     session = _lookup_session(db, refresh_token, lock=True)
     if session is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid session")
@@ -194,7 +227,10 @@ def refresh(request: Request, response: Response, db: Session = Depends(get_db))
     refresh_token_new, csrf_token_new = _create_session(db, user.id)
     db.commit()
     _set_session_cookies(response, refresh_token_new, csrf_token_new)
-    return RefreshResponse(access_token=create_access_token(user.id), user=_build_user_response(user))
+    return RefreshResponse(
+        access_token=create_access_token(user.id),
+        user=_build_user_response(user),
+    )
 
 
 @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
@@ -205,7 +241,7 @@ def logout(request: Request, response: Response, db: Session = Depends(get_db)) 
         session = _lookup_session(db, refresh_token, lock=True)
         if session:
             _validate_session_csrf(csrf_token, session)
-            session.revoked_at = datetime.now(timezone.utc)
+            session.revoked_at = datetime.now(UTC)
             db.commit()
     _clear_session_cookies(response)
     return response

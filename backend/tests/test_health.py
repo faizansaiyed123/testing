@@ -15,3 +15,4 @@ def test_root_hidden_from_openapi() -> None:
     schema = client.get("/api/v1/openapi.json").json()
     assert "/" not in schema["paths"]
     assert "/api/v1/health" in schema["paths"]
+    assert "/api/v1/ready" in schema["paths"]

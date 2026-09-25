@@ -2,74 +2,68 @@
 
 **Product:** Fieldline CRM  
 **Repository:** `faizansaiyed123/testing`  
-**Branch:** `main`  
+**Working branch:** `feature/automation`  
+**Stable branch:** `main`  
 **Status date:** 2026-09-25
 
-## Verified
+## Backend slices in this cumulative branch
 
-- GitHub connection is active with push/admin access.
-- `main` is the stable branch.
-- Product foundation and architecture decisions are documented.
-- Backend FastAPI scaffold is implemented.
-- PostgreSQL configuration and Alembic migration wiring are implemented.
-- Identity schema is implemented: organizations, users, memberships, roles, uniqueness, and indexes.
-- Authentication is implemented: Argon2 password hashing, signed short-lived access tokens, opaque refresh sessions, refresh rotation, CSRF checks, secure-cookie production validation, and authenticated `/me`.
-- Local backend security/unit tests pass: 12 tests.
-- Backend bytecode compilation passes.
-- Alembic offline SQL generation includes the identity and auth-session migrations.
-- Incremental commits are being pushed to `main` as coherent engineering units.
+- FastAPI backend scaffold with versioned routing and OpenAPI.
+- PostgreSQL/SQLAlchemy configuration and Alembic migration infrastructure.
+- Organization, user, membership, and role identity model.
+- Argon2 password hashing and secure authentication lifecycle.
+- Short-lived signed access JWTs with issuer/audience/type/expiry validation.
+- Opaque refresh sessions with server-side hashes, rotation, locking, CSRF binding, and secure-cookie production checks.
+- Tenant membership and reusable role authorization dependencies.
+- Database-backed authentication throttling with HMAC fingerprints.
+- CRM core schema: companies, contacts, pipeline stages, opportunities, activities, tasks, and audit events.
+- Tenant-scoped audited company/contact CRUD, search, archive, and cross-tenant validation.
+- Stage-driven opportunity state with explicit win/loss invariants.
+- Customer 360 timeline using SQL `UNION ALL` with bounded cursor pagination.
+- HTTP request IDs, safe internal errors, security headers, auth cache prevention, and DB readiness.
+- Default sales pipeline stages during organization signup.
+- Explainable attention queue for overdue work, overdue open opportunities, stale open opportunities, and stale lead/prospect relationships.
+- Deterministic workflow automation: admin-managed rules, opportunity transition triggers, transaction-scoped task creation, execution records, unique event keys, idempotency, and task audit events.
 
-## Current phase
+## Current GitHub review state
 
-**Phase 1 — identity and authentication foundation**
+The repository already contains several older feature branches/PRs that were created independently from earlier repository states. They are not being treated as authoritative.
 
-Completed slices:
-1. product foundation and engineering rules
-2. FastAPI backend scaffold
-3. PostgreSQL/SQLAlchemy configuration and migration infrastructure
-4. organization/user identity model
-5. password hashing and token primitives
-6. authentication flows and session storage
-7. authentication regression tests
-8. CI baseline
+The cumulative branch `feature/automation` is the intended continuation because it contains the current linear backend implementation from the CRM foundation through attention and automation.
 
-Next:
-1. backend authorization dependencies and role checks
-2. rate limiting / brute-force protection for authentication endpoints
-3. security headers and structured error handling
-4. customer/company domain
-5. customer activity/timeline
+A new PR from this branch is the authoritative merge candidate. It must pass the exact-head GitHub Actions gate before `main` is changed.
 
-## Authentication design
+## Automation contract
 
-- Passwords are stored only as Argon2 hashes.
-- Access tokens are short-lived signed JWTs with issuer, audience, type, subject, issued-at, and expiry claims.
-- Refresh tokens are random opaque values; only SHA-256 hashes are stored server-side.
-- Refresh-token sessions are rotated and locked during rotation to avoid concurrent reuse.
-- Refresh/logout require a double-submit CSRF token and bind it to the stored session hash.
-- Production configuration requires a non-default JWT secret of at least 32 bytes and secure cookies.
-- Refresh cookies use an HttpOnly flag; the CSRF cookie is readable by browser JavaScript so it can be echoed in a request header.
+Supported deterministic triggers:
+- `opportunity.won`
+- `opportunity.lost`
 
-## Environment limitations
+Supported action:
+- `create_task`
 
-The execution container currently has no Docker/PostgreSQL client and does not have the `psycopg` or Ruff packages installed. Package installation from the external package index is blocked by the execution environment's network configuration. Consequently, live PostgreSQL connectivity, live migration execution, Ruff execution, and full GitHub Actions verification remain **blocked/unverified** here.
+Execution is idempotent by `rule_id + event_key`. The event key includes opportunity id, previous status, new status, and target stage id. Duplicate delivery of the same transition does not create a second task.
 
-The CI workflow is configured to run against PostgreSQL 18 and is the authoritative live database quality gate once GitHub Actions executes it.
+Automation rule creation and enable/disable operations are restricted to organization owners/admins. Automation-generated tasks retain normal CRM ownership, relationship links, and audit history.
 
-## Product scope
+## Verification state
 
-Fieldline focuses on:
-- Customer 360 timeline
-- explainable attention/follow-up signals
-- duplicate detection and safe merge
-- deterministic workflow automation
-- transaction-safe CSV import
-- saved views and advanced search
-- explainable relationship health
-- audit history
+GitHub Actions has successfully demonstrated PostgreSQL service startup, backend installation, source linting, Python compilation, and live Alembic execution on recent backend runs. Test failures found during development were inspected and corrected rather than bypassed.
 
-The system is intentionally designed as a modular monolith until measured requirements justify additional infrastructure.
+The current cumulative head still requires its own exact-head CI run because the branch has advanced since prior checks.
 
-## Rule
+The local execution container cannot provide live PostgreSQL/Ruff verification, so no local live-DB pass is claimed.
 
-Never mark a feature “verified” unless its relevant code path and tests have actually been exercised.
+## Next slices after merge
+
+1. Finish exact-head CI for the cumulative backend branch and merge it into `main`.
+2. Transaction-safe CSV import with dry-run, validation, rollback, and row-level error reporting.
+3. Saved views / advanced search / relationship health.
+4. Frontend foundation and real API integration.
+5. Full end-to-end, accessibility, security, performance, and repository audit.
+
+## Recovery rule
+
+Before resuming after interruption, inspect Git refs, PR state, commits, migrations, tests, and existing implementation. Never recreate completed work or rewrite useful history.
+
+Never mark a feature verified unless its relevant code path and tests have actually been exercised.
