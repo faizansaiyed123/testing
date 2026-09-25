@@ -12,6 +12,7 @@ from app.db.base import Base
 if TYPE_CHECKING:
     from app.models.company import Company
     from app.models.contact import Contact
+    from app.models.organization import Organization
     from app.models.pipeline import PipelineStage
 
 
@@ -47,6 +48,7 @@ class Opportunity(Base):
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
     )
 
+    organization: Mapped["Organization"] = relationship()
     company: Mapped["Company | None"] = relationship(back_populates="opportunities")
     contact: Mapped["Contact | None"] = relationship(back_populates="opportunities")
     stage: Mapped["PipelineStage"] = relationship(back_populates="opportunities")
@@ -57,6 +59,13 @@ class Opportunity(Base):
         Index(
             "ix_opportunities_org_close_date",
             "organization_id",
+            "expected_close_date",
+            "deleted_at",
+        ),
+        Index(
+            "ix_opportunities_org_attention",
+            "organization_id",
+            "status",
             "expected_close_date",
             "deleted_at",
         ),
