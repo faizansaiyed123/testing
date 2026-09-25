@@ -139,3 +139,133 @@ export type ImportCommitResponse = {
   would_create: number;
   committed_rows: number;
 };
+
+export type DuplicateCandidate = {
+  entity_type: "contact" | "company";
+  first_id: string;
+  second_id: string;
+  first_label: string;
+  second_label: string;
+  similarity: number;
+  reasons: string[];
+};
+
+export type QualityIssue = {
+  code: string;
+  entity_type: "contact" | "company" | "opportunity" | "task";
+  entity_id: string;
+  severity: "high" | "medium" | "low";
+  title: string;
+  detail: string;
+  fixable: boolean;
+};
+
+export type DataQualityResponse = {
+  generated_at: string;
+  summary: {
+    total_issues: number;
+    high: number;
+    medium: number;
+    low: number;
+    duplicate_contacts: number;
+    duplicate_companies: number;
+    incomplete_records: number;
+    stale_contacts: number;
+    opportunity_issues: number;
+    overdue_tasks: number;
+  };
+  duplicate_candidates: DuplicateCandidate[];
+  issues: QualityIssue[];
+};
+
+export type MergeResponse = {
+  operation_id: string;
+  entity_type: "contact" | "company";
+  survivor_id: string;
+  merged_id: string;
+  completed_at: string;
+};
+
+export type BusinessRule = {
+  key: string;
+  value: number;
+  default: number;
+  description: string;
+};
+
+export type PlannerItem = {
+  entity_type: "task" | "opportunity" | "contact";
+  entity_id: string;
+  priority: number;
+  title: string;
+  reason: string;
+  next_action: string;
+  evidence: string[];
+  due_at: string | null;
+  last_activity_at: string | null;
+};
+
+export type DailyPlannerResponse = {
+  generated_at: string;
+  items: PlannerItem[];
+};
+
+export type StuckOpportunity = {
+  id: string;
+  name: string;
+  stage_id: string;
+  stage_name: string;
+  amount: string | null;
+  status: string;
+  stage_age_days: number;
+  last_activity_at: string | null;
+  expected_close_date: string | null;
+  overdue_task_count: number;
+  has_next_action: boolean;
+  reasons: string[];
+  recommended_action: string;
+};
+
+export type StuckOpportunityResponse = {
+  generated_at: string;
+  configured_threshold_days: number;
+  items: StuckOpportunity[];
+};
+
+export type AutomationRun = {
+  id: string;
+  workflow: string;
+  trigger: string;
+  event_key: string;
+  status: string;
+  action_type: string;
+  result: Record<string, unknown> | null;
+  created_at: string;
+  completed_at: string | null;
+};
+
+export type GraphNode = {
+  id: string;
+  type: string;
+  label: string;
+  meta: Record<string, string | null>;
+};
+
+export type GraphEdge = {
+  id: string;
+  source: string;
+  target: string;
+  label: string;
+};
+
+export type RelationshipGraphResponse = {
+  contact_id: string;
+  nodes: GraphNode[];
+  edges: GraphEdge[];
+};
+
+export type SystemHealthResponse = {
+  generated_at: string;
+  status: "ok" | "warning" | "error";
+  checks: Record<string, { status: "ok" | "warning" | "error"; detail: string }>;
+};
