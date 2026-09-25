@@ -2,7 +2,6 @@ from datetime import UTC, datetime
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query
-
 from sqlalchemy.orm import Session
 
 from app.auth.authorization import require_membership
