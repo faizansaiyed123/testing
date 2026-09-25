@@ -5,7 +5,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/app/providers";
 import { apiFetch } from "@/lib/api";
 import type { BusinessRule, SystemHealthResponse } from "@/lib/types";
-import { Badge, Button, SectionTitle } from "@/components/ui";
+import { Badge, Button, SectionTitle, ErrorState } from "@/components/ui";
 
 export default function SettingsPage() {
   const { accessToken, organizationId, user } = useAuth();
@@ -44,7 +44,11 @@ export default function SettingsPage() {
   return (
     <div className="page">
       <SectionTitle eyebrow="Administration" title="Rules & system health" description="Tune deterministic operating thresholds and inspect the self-hosted system health state." />
-      {message ? <div className="callout">{message}</div> : null}
+      {message ? <div className="callout" role="status">{message}</div> : null}
+      {rules.isError || health.isError ? <div className="content-grid two-up">
+        {rules.isError ? <ErrorState description={(rules.error as Error).message} onRetry={() => void rules.refetch()} /> : <div />}
+        {health.isError ? <ErrorState description={(health.error as Error).message} onRetry={() => void health.refetch()} /> : <div />}
+      </div> : null}
 
       <div className="content-grid two-up">
         <section className="panel">
