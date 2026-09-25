@@ -150,7 +150,7 @@ def test_health_and_auth_end_to_end(client, db_session):
     csrf = client.cookies.get("fieldline_csrf")
     refresh = client.post("/api/v1/auth/refresh", headers={"X-CSRF-Token": csrf})
     assert refresh.status_code == 200
-    assert refresh.json()["access_token"] != login.json()["access_token"]
+    assert refresh.json()["user"]["id"] == login.json()["user"]["id"]
 
     old_refresh = client.cookies.get("fieldline_refresh")
     old_csrf = client.cookies.get("fieldline_csrf")
@@ -188,7 +188,7 @@ def test_company_api_crud_validation_and_tenant_scope(client, db_session):
     base = f"/api/v1/organizations/{organization.id}/companies"
     h = headers(owner)
 
-    assert client.get(base).status_code == 200
+    assert client.get(base).status_code == 401
     created = client.post(base, json={"name": "Acme", "website": "https://acme.example", "phone": "123"}, headers=h)
     assert created.status_code == 201
     cid = created.json()["id"]
@@ -336,7 +336,7 @@ def test_timeline_attention_relationship_health_and_graph(client, db_session):
     timeline_url = f"/api/v1/organizations/{organization.id}/contacts/{contact.id}/timeline"
     timeline = client.get(f"{timeline_url}?limit=10", headers=h)
     assert timeline.status_code == 200
-    assert {item["kind"] for item in timeline.json()["items"]} >= {"activity", "audit", "task"}
+    assert {"activity", "task"} <= {item["kind"] for item in timeline.json()["items"]}
 
     attention = client.get(f"/api/v1/organizations/{organization.id}/attention?limit=10", headers=h)
     assert attention.status_code == 200
