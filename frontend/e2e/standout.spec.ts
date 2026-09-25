@@ -206,7 +206,7 @@ test("contact inspection is keyboard reachable", async ({ page }) => {
     });
   });
   await page.goto("/contacts");
-  const inspect = page.getByRole("button", { name: "Inspect Ada Lovelace" });
+  const inspect = page.getByRole("button", { name: "Inspect Ada Lovelace", exact: true });
   await inspect.focus();
   await expect(inspect).toBeFocused();
   const outline = await inspect.evaluate((el) => getComputedStyle(el).outlineStyle);
