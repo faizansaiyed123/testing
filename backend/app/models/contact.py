@@ -11,6 +11,7 @@ from app.db.base import Base
 if TYPE_CHECKING:
     from app.models.company import Company
     from app.models.opportunity import Opportunity
+    from app.models.organization import Organization
 
 
 class Contact(Base):
@@ -40,17 +41,13 @@ class Contact(Base):
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
     )
 
+    organization: Mapped["Organization"] = relationship()
     company: Mapped["Company | None"] = relationship(back_populates="contacts")
     opportunities: Mapped[list["Opportunity"]] = relationship(back_populates="contact")
 
     __table_args__ = (
         Index("ix_contacts_org_owner_active", "organization_id", "owner_user_id", "deleted_at"),
-        Index(
-            "ix_contacts_org_email_active",
-            "organization_id",
-            func.lower(email),
-            postgresql_where=deleted_at.is_(None),
-        ),
+        Index("ix_contacts_org_email_active", "organization_id", func.lower(email), postgresql_where=deleted_at.is_(None)),
         Index(
             "ix_contacts_org_name_active",
             "organization_id",
@@ -58,4 +55,11 @@ class Contact(Base):
             func.lower(last_name),
             postgresql_where=deleted_at.is_(None),
         ),
+        Index(
+            "ix_contacts_org_phone_active",
+            "organization_id",
+            func.regexp_replace(phone, r"\D", "", "g"),
+            postgresql_where=deleted_at.is_(None),
+        ),
+        Index("ix_contacts_org_attention", "organization_id", "lifecycle", "deleted_at"),
     )
