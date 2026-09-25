@@ -133,9 +133,10 @@ def test_admin_can_create_rule_and_won_transition_runs_once(client, db_session) 
     assert task is not None
     assert task.title == "Start customer handoff"
     assert task.priority == "high"
-    assert db_session.scalar(
+    persisted_rule_id = db_session.scalar(
         select(AutomationRule.id).where(AutomationRule.id == rule_id)
-    ) == rule_id
+    )
+    assert str(persisted_rule_id) == rule_id
 
 
 @pytest.mark.skipif(
