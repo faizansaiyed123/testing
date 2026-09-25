@@ -57,7 +57,7 @@ test("data quality supports evidence review", async ({ page }) => {
   });
   await page.goto("/quality");
   await expect(page.getByRole("heading", { name: "Data Quality Center" })).toBeVisible();
-  await expect(page.getByText("Ada Lovelace")).toBeVisible();
+  await expect(page.getByRole("button", { name: /Ada Lovelace/ })).toBeVisible();
   await page.getByRole("button", { name: /Ada Lovelace/ }).click();
   await expect(page.getByRole("heading", { name: "Choose the survivor" })).toBeVisible();
 });
@@ -86,7 +86,7 @@ test("planner exposes reasons and next actions", async ({ page }) => {
   });
   await page.goto("/planner");
   await expect(page.getByRole("heading", { name: "My work today" })).toBeVisible();
-  await expect(page.getByText("Stage has not changed for 28 days")).toBeVisible();
+  await expect(page.getByRole("paragraph").filter({ hasText: "Stage has not changed for 28 days" })).toBeVisible();
   await expect(page.getByText("Schedule a concrete next action")).toBeVisible();
 });
 
@@ -159,6 +159,6 @@ test("relationship graph and health console render", async ({ page }) => {
 
   await page.goto("/settings");
   await expect(page.getByRole("heading", { name: "Rules & system health" })).toBeVisible();
-  await expect(page.getByText("database")).toBeVisible();
+  await expect(page.getByText("database", { exact: true })).toBeVisible();
   await expect(page.getByText("pg trgm")).toBeVisible();
 });
