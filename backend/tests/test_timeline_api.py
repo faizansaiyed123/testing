@@ -135,13 +135,16 @@ def test_contact_timeline_enforces_tenant_scope(client, db_session) -> None:
         user=other_user,
         role=MembershipRole.OWNER,
     )
+    db_session.add_all([other, other_user, other_member])
+    db_session.flush()
+
     contact = Contact(
         organization_id=other.id,
         owner_user_id=other_user.id,
         first_name="Other",
         last_name="Contact",
     )
-    db_session.add_all([org, user, membership, other, other_user, other_member, contact])
+    db_session.add_all([org, user, membership, contact])
     db_session.flush()
 
     token = create_access_token(user.id)
