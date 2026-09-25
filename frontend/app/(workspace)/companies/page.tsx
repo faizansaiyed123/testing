@@ -17,6 +17,7 @@ export default function CompaniesPage() {
   const pageSize = 25;
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState("");
+  const [selected, setSelected] = useState<Company | null>(null);
 
   const companies = useQuery({
     queryKey: ["companies", organizationId, query, page],
@@ -27,6 +28,25 @@ export default function CompaniesPage() {
         {},
         accessToken,
       ),
+  });
+
+  const update = useMutation({
+    mutationFn: ({ id, input }: { id: string; input: Record<string, unknown> }) =>
+      apiFetch<Company>(`${prefix}/companies/${id}`, { method: "PATCH", body: input }, accessToken),
+    onSuccess: (company) => {
+      void queryClient.invalidateQueries({ queryKey: ["companies", organizationId] });
+      setSelected(company);
+      setError("");
+    },
+    onError: (mutationError) => setError(mutationError instanceof Error ? mutationError.message : "Could not update company"),
+  });
+  const archive = useMutation({
+    mutationFn: (id: string) => apiFetch<void>(`${prefix}/companies/${id}`, { method: "DELETE" }, accessToken),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["companies", organizationId] });
+      setSelected(null);
+    },
+    onError: (mutationError) => setError(mutationError instanceof Error ? mutationError.message : "Could not archive company"),
   });
 
   const create = useMutation({
@@ -66,7 +86,7 @@ export default function CompaniesPage() {
             <thead><tr><th>Company</th><th>Website</th><th>Phone</th><th>Owner</th></tr></thead>
             <tbody>
               {companies.data.items.map((company) => (
-                <tr key={company.id}>
+                <tr key={company.id} className="click-row" onClick={() => { setSelected(company); setError(""); }}>
                   <td><strong>{company.name}</strong></td>
                   <td>{company.website ?? "—"}</td>
                   <td>{company.phone ?? "—"}</td>
@@ -89,6 +109,16 @@ export default function CompaniesPage() {
             <Button variant="secondary" disabled={page >= Math.ceil(companies.data.total / companies.data.page_size) || companies.isFetching} onClick={() => setPage((value) => value + 1)}>Next</Button>
           </div>
         </div>
+      ) : null}
+      {selected ? (
+        <CompanyDrawer
+          company={selected}
+          onClose={() => setSelected(null)}
+          onSave={(input) => update.mutate({ id: selected.id, input })}
+          onArchive={() => archive.mutate(selected.id)}
+          busy={update.isPending || archive.isPending}
+          error={error}
+        />
       ) : null}
       {creating ? <CreateCompany onClose={() => setCreating(false)} onCreate={(input) => create.mutate(input)} busy={create.isPending} error={error} /> : null}
     </div>
@@ -128,6 +158,51 @@ function CreateCompany({
           <label>Phone<input value={phone} onChange={(event) => setPhone(event.target.value)} /></label>
           {error ? <div className="form-error" role="alert">{error}</div> : null}
           <Button type="submit" disabled={busy}>{busy ? "Creating…" : "Create company"}</Button>
+        </form>
+      </aside>
+    </div>
+  );
+}
+
+
+function CompanyDrawer({
+  company,
+  onClose,
+  onSave,
+  onArchive,
+  busy,
+  error,
+}: {
+  company: Company;
+  onClose: () => void;
+  onSave: (input: Record<string, unknown>) => void;
+  onArchive: () => void;
+  busy: boolean;
+  error: string;
+}) {
+  const [name, setName] = useState(company.name);
+  const [website, setWebsite] = useState(company.website ?? "");
+  const [phone, setPhone] = useState(company.phone ?? "");
+
+  function submit(event: FormEvent) {
+    event.preventDefault();
+    onSave({ name, website: website || null, phone: phone || null });
+  }
+
+  return (
+    <div className="drawer-backdrop">
+      <aside className="drawer" role="dialog" aria-modal="true" aria-labelledby="company-edit-title">
+        <div className="drawer-head">
+          <div><span className="eyebrow">Account detail</span><h2 id="company-edit-title">{company.name}</h2><p>Changes are audited by the backend.</p></div>
+          <button className="icon-button" onClick={onClose} aria-label="Close">×</button>
+        </div>
+        <form className="stack-form" onSubmit={submit}>
+          <label>Company name<input value={name} onChange={(event) => setName(event.target.value)} required /></label>
+          <label>Website<input type="url" value={website} onChange={(event) => setWebsite(event.target.value)} /></label>
+          <label>Phone<input value={phone} onChange={(event) => setPhone(event.target.value)} /></label>
+          {error ? <div className="form-error" role="alert">{error}</div> : null}
+          <Button type="submit" disabled={busy}>{busy ? "Saving…" : "Save changes"}</Button>
+          <Button variant="danger" disabled={busy} onClick={() => { if (window.confirm("Archive this company?")) onArchive(); }}>Archive company</Button>
         </form>
       </aside>
     </div>
