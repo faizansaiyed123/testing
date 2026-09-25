@@ -5,7 +5,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/app/providers";
 import { apiFetch } from "@/lib/api";
 import type { ContactList, SavedView } from "@/lib/types";
-import { Badge, Button, EmptyState, SectionTitle } from "@/components/ui";
+import { Badge, Button, EmptyState, ErrorState, SectionTitle } from "@/components/ui";
 
 export default function ViewsPage() {
   const { accessToken, organizationId, user } = useAuth();
@@ -50,7 +50,7 @@ export default function ViewsPage() {
       <div className="content-grid two-up">
         <section className="panel">
           <div className="panel-head"><div><span className="eyebrow">Views</span><h2>Your saved definitions</h2></div></div>
-          {views.data?.length ? (
+          {views.isError ? <ErrorState description={(views.error as Error).message} onRetry={() => void views.refetch()} /> : views.data?.length ? (
             <div className="view-list">
               {views.data.map((view) => (
                 <button key={view.id} className={selected?.id === view.id ? "view-item active" : "view-item"} onClick={() => setSelected(view)}>
@@ -70,7 +70,7 @@ export default function ViewsPage() {
             results.isLoading ? (
               <div className="panel-empty">Running view…</div>
             ) : results.isError ? (
-              <div className="form-error" style={{ margin: 16 }}>{(results.error as Error).message}</div>
+              <ErrorState description={(results.error as Error).message} onRetry={() => void results.refetch()} />
             ) : (
               <div className="view-results">
                 <div className="view-summary">{results.data?.total ?? 0} matching contacts</div>
